@@ -3,11 +3,12 @@ package main
 import (
     "database/sql"
     "encoding/json"
-    "golang.org/x/crypto/bcrypt"
+    "fmt"
     "log"
     "net/http"
     "time"
-    // "github.com/gorilla/mux"
+    "golang.org/x/crypto/bcrypt"
+    "github.com/gorilla/mux"
     _ "github.com/lib/pq"
 )
 
@@ -27,22 +28,28 @@ type Event struct {
     Time time.Time `json:"time", db:"time"`
 }
 
-// var Events []Event
-
 func main() {
-    http.HandleFunc("/login", Login)
-    http.HandleFunc("/signup", Signup)
+    router := mux.NewRouter()
+
+    router.HandleFunc("/", Home)
+
+    router.HandleFunc("/login", Login)
+    router.HandleFunc("/signup", Signup)
 
     // http.HandleFunc("/events/", RetrieveEvents)
-    http.HandleFunc("/events/new", CreateEvent)
+    router.HandleFunc("/events/new", CreateEvent)
     // http.HandleFunc("/events/{id}/edit", EditEvent)
 
     initDB()
 
-    log.Fatal(http.ListenAndServe(":8000", nil))
+    log.Fatal(http.ListenAndServe(":8000", router))
 }
 
-func Login(w http.ResponseWriter, r *http.Request){
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Sup World!")
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
 	creds := &User{}
 	err := json.NewDecoder(r.Body).Decode(creds)
 	if err != nil {
@@ -73,11 +80,11 @@ func Login(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/signup -d '{"username":"whammy","password":"whammy"}' -v
+// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/signup -d '{"username":"blamo","password":"blamo"}' -v
 
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/login -d '{"username":"whammy","password":"whammy"}' -v
+// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/login -d '{"username":"blamo","password":"blamo"}' -v
 
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/events/new -d '{"user_id":3,"name":"funtimes","description":"so fun"}' -v
+// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/events/new -d '{"user_id":4,"name":"wow","description":"whooooa"}' -v
 
 func Signup(w http.ResponseWriter, r *http.Request) {
     creds := &User{}
@@ -121,3 +128,4 @@ func initDB() {
 // https://github.com/sohamkamani/go-password-auth-example
 // https://golang.org/doc/articles/wiki/
 // https://tutorialedge.net/golang/creating-restful-api-with-golang/
+// https://medium.com/@adigunhammedolalekan/build-and-deploy-a-secure-rest-api-with-go-postgresql-jwt-and-gorm-6fadf3da505b
