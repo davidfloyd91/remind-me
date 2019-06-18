@@ -1,123 +1,90 @@
 package main
 
 import (
-    "database/sql"
+    "fmt"
     "encoding/json"
-    "golang.org/x/crypto/bcrypt"
     "log"
     "net/http"
-    "time"
-    // "github.com/gorilla/mux"
+
+    "github.com/gorilla/mux"
+    "github.com/rs/cors"
+    "github.com/jinzhu/gorm"
     _ "github.com/lib/pq"
+    _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
 )
 
-var db *sql.DB
-
-type User struct {
-    Id int `json: "id", db: "id"`
-    Username string `json:"username", db:"username"`
-    Password string `json:"password", db:"password"`
-}
-
 type Event struct {
-    Id int `json: "id", db: "id"`
-    UserId int `json:"user_id", db:"user_id"`
-    Name string `json:"name", db:"name"`
-    Description string `json:"description", db:"description"`
-    Time time.Time `json:"time", db:"time"`
+	gorm.Model
+
+	Name         string
+	Description  string
 }
 
-// var Events []Event
+var db *gorm.DB
+var err error
 
 func main() {
-    http.HandleFunc("/login", Login)
-    http.HandleFunc("/signup", Signup)
-
-    // http.HandleFunc("/events/", RetrieveEvents)
-    http.HandleFunc("/events/new", CreateEvent)
-    // http.HandleFunc("/events/{id}/edit", EditEvent)
-
     initDB()
-
-    log.Fatal(http.ListenAndServe(":8000", nil))
+    initRouter()
 }
 
-func Login(w http.ResponseWriter, r *http.Request){
-	creds := &User{}
-	err := json.NewDecoder(r.Body).Decode(creds)
-	if err != nil {
-  		w.WriteHeader(http.StatusBadRequest)
-  		return
-	}
-
-	result := db.QueryRow("select password from users where username=$1", creds.Username)
-	if err != nil {
-  		w.WriteHeader(http.StatusInternalServerError)
-  		return
-	}
-
-	storedCreds := &User{}
-	err = result.Scan(&storedCreds.Password)
-	if err != nil {
-  		if err == sql.ErrNoRows {
-    			w.WriteHeader(http.StatusUnauthorized)
-    			return
-  		}
-
-  		w.WriteHeader(http.StatusInternalServerError)
-  		return
-	}
-
-	if err = bcrypt.CompareHashAndPassword([]byte(storedCreds.Password), []byte(creds.Password)); err != nil {
-		  w.WriteHeader(http.StatusUnauthorized)
-	}
+var Home = func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Add("Content-Type", "application/json")
+    json.NewEncoder(w).Encode("Welcome home!")
 }
 
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/signup -d '{"username":"whammy","password":"whammy"}' -v
-
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/login -d '{"username":"whammy","password":"whammy"}' -v
-
-// curl -X POST -H 'Content-Type:application/json' http://localhost:8000/events/new -d '{"user_id":3,"name":"funtimes","description":"so fun"}' -v
-
-func Signup(w http.ResponseWriter, r *http.Request) {
-    creds := &User{}
-    err := json.NewDecoder(r.Body).Decode(creds)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
-
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), 8)
-
-    if _, err = db.Query("insert into users (username, password) values ($1, $2)", creds.Username, string(hashedPassword)); err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
-    }
-}
-
-func CreateEvent(w http.ResponseWriter, r *http.Request) {
+// this doesn't work
+var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     event := &Event{}
-    err := json.NewDecoder(r.Body).Decode(event)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
+    json.NewDecoder(r.Body).Decode(&event)
 
-    if _, err = db.Query("insert into events (user_id, name, description) values ($1, $2, $3)", event.UserId, event.Name, event.Description); err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
+    db.Create(&event)
+    w.Header().Add("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&event)
+}
+
+func initRouter() {
+    router := mux.NewRouter()
+
+    router.HandleFunc("/", Home)
+    router.HandleFunc("/events", CreateEvent).Methods("POST")
+
+    // router.Use(JwtAuthentication)
+
+    handler := cors.Default().Handler(router)
+
+    err := http.ListenAndServe(":8000", handler)
+	  if err != nil {
+		    fmt.Print(err)
     }
 }
 
+// https://github.com/Sach97/pgsearch-gorm-example/blob/master/search/main.go
 func initDB() {
-    var err error
-    db, err = sql.Open("postgres", "dbname=remindme sslmode=disable")
+    host := "localhost"
+    port := 5432
+    user := "postgres"
+    dbname := "remindme"
+    sslmode := "disable"
+
+    t := "host=%s port=%d user=%s dbname=%s sslmode=%s"
+
+    connectionString := fmt.Sprintf(t, host, port, user, dbname, sslmode)
+
+    db, err := gorm.Open("postgres", connectionString)
+
+    db.AutoMigrate(&Event{})
+    defer db.Close()
 
     if err != nil {
-        panic(err)
+        fmt.Println("Error in postgres connection: ", err)
     }
-}
 
-// https://github.com/sohamkamani/go-password-auth-example
-// https://golang.org/doc/articles/wiki/
-// https://tutorialedge.net/golang/creating-restful-api-with-golang/
+    err = db.DB().Ping()
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println("Successfully connected!")
+}
