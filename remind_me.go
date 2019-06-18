@@ -60,18 +60,13 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
-    event := Event{Name: "fun", Description: "most fun"}
+    event := &Event{}
 
-    // err := json.NewDecoder(r.Body).Decode(event)
-    // if err != nil {
-    //     w.WriteHeader(http.StatusBadRequest)
-    //     return
-    // }
-
-    // if _, err = db.Query("insert into events (name, description) values ($1, $2)", event.Name, event.Description); err != nil {
-    //     w.WriteHeader(http.StatusInternalServerError)
-    //     return
-    // }
+    err := json.NewDecoder(r.Body).Decode(event)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
 
     db.Create(&event)
 
