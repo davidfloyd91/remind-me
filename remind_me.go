@@ -7,7 +7,7 @@ import (
     "net/http"
 
     "github.com/gorilla/mux"
-    // "github.com/rs/cors"
+    "github.com/rs/cors"
     "github.com/jinzhu/gorm"
     _ "github.com/lib/pq"
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
@@ -82,9 +82,9 @@ func initRouter() {
 
     // router.Use(JwtAuthentication)
 
-    // handler := cors.Default().Handler(router)
+    handler := cors.Default().Handler(router)
 
-    err := http.ListenAndServe(":8000", router)
+    err := http.ListenAndServe(":8000", handler)
 	  if err != nil {
 		    fmt.Print(err)
     }
