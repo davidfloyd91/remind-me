@@ -66,14 +66,22 @@ func main() {
 
 var Home = func(w http.ResponseWriter, r *http.Request) {
     // error handling here (not all that important)
-    w.Header().Add("Content-Type", "application/json")
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("Welcome home!")
+}
+
+var GetEvent = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    var event Event
+    db.First(&event, params["id"])
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&event)
 }
 
 var GetEvents = func(w http.ResponseWriter, r *http.Request) {
     var events []Event
     db.Find(&events)
-    w.Header().Add("Content-Type", "application/json")
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
 
@@ -90,7 +98,7 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     db.Create(&event)
 
     // error handling here
-    w.Header().Add("Content-Type", "application/json")
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(event)
 }
 
@@ -98,6 +106,7 @@ func initRouter() {
     router := mux.NewRouter()
 
     router.HandleFunc("/", Home)
+    router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
     router.HandleFunc("/events", GetEvents).Methods("GET")
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
