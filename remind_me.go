@@ -21,7 +21,6 @@ type Event struct {
 }
 
 var db *gorm.DB
-// right? wrong?
 var err error
 
 func main() {
@@ -38,18 +37,15 @@ func main() {
 
     connectionString := fmt.Sprintf(t, host, port, user, dbname, sslmode)
 
-    // err????????
     db, err = gorm.Open("postgres", connectionString)
 
     db.AutoMigrate(&Event{})
     defer db.Close()
 
-    // err????????
     if err != nil {
         fmt.Println("Error in postgres connection: ", err)
     }
 
-    // err????????
     err = db.DB().Ping()
 
     if err != nil {
@@ -65,7 +61,6 @@ func main() {
 }
 
 var Home = func(w http.ResponseWriter, r *http.Request) {
-    // error handling here (not all that important)
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("Welcome home!")
 }
@@ -73,14 +68,36 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     var event Event
+
     db.First(&event, params["id"])
+
     w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&event)
+}
+
+var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+  	var event Event
+
+  	db.First(&event, params["id"])
+  	db.Model(&event).Update("name", r.FormValue("Name"))
+  	json.NewEncoder(w).Encode(&event)
+}
+
+var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    var event Event
+
+    db.First(&event, params["id"])
+    db.Delete(&event)
     json.NewEncoder(w).Encode(&event)
 }
 
 var GetEvents = func(w http.ResponseWriter, r *http.Request) {
     var events []Event
+
     db.Find(&events)
+
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
@@ -88,8 +105,7 @@ var GetEvents = func(w http.ResponseWriter, r *http.Request) {
 var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     event := &Event{}
 
-    // should it be declaring a new err?
-    err := json.NewDecoder(r.Body).Decode(event)
+    err = json.NewDecoder(r.Body).Decode(event)
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
         return
@@ -97,7 +113,6 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
 
     db.Create(&event)
 
-    // error handling here
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(event)
 }
@@ -105,20 +120,33 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
 func initRouter() {
     router := mux.NewRouter()
 
+    /*** home ***/
+    // $ curl http://localhost:8000
     router.HandleFunc("/", Home)
-    router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
-    router.HandleFunc("/events", GetEvents).Methods("GET")
+
+    /*** create ***/
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"nametime","description":"whoa descriptive"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
+
+    /*** index ***/
+    // $ curl http://localhost:8000/events -v
+    router.HandleFunc("/events", GetEvents).Methods("GET")
+
+    /*** show ***/
+    // $ curl http://localhost:8000/events/8 -v
+    router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
+
+    /*** update ***/
+    // $ curl --request PUT http://localhost:8000/events/8?Name=lololol -v
+    router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
+
+    /*** delete ***/
+    // $ curl -X DELETE http://localhost:8000/events/3
+    router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
 
     // router.Use(JwtAuthentication)
 
     handler := cors.Default().Handler(router)
 
-    // declare new err here?
-    err := http.ListenAndServe(":8000", handler)
-
-    // which err is this even referring to?
-	  if err != nil {
-		    fmt.Print(err)
-    }
+    log.Fatal(http.ListenAndServe(":8000", handler))
 }
