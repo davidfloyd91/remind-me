@@ -16,8 +16,17 @@ import (
 type Event struct {
 	gorm.Model
 
-	Name         string
-	Description  string
+  UserID       uint   `gorm:"user_id" json:"user_id"`
+	Name         string `gorm:"name" json:"name"`
+	Description  string `gorm:"description" json:"description"`
+}
+
+type User struct {
+	gorm.Model
+
+  Username     string
+	Email        string `gorm:"description" json:"description"`
+  Digest       string `json:"-"`
 }
 
 var db *gorm.DB
@@ -54,7 +63,7 @@ func main() {
 
     fmt.Println("Successfully connected!")
     /******************************
-        .............. did that
+               did that
     ******************************/
 
     initRouter()
@@ -81,7 +90,8 @@ var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
 
   	db.First(&event, params["id"])
     r.ParseForm()
-    db.Model(&event).Updates(Event{Name: r.FormValue("Name"), Description: r.FormValue("Description")})
+
+    db.Model(&event).Updates(Event{Name: r.FormValue("name"), Description: r.FormValue("description")})
 
     w.Header().Set("Content-Type", "application/json")
   	json.NewEncoder(w).Encode(&event)
@@ -129,6 +139,22 @@ func initRouter() {
     // $ curl http://localhost:8000 -v
     router.HandleFunc("/", Home)
 
+    /******************************
+                 users
+    ******************************/
+
+    /*** signup ***/
+    // $ curl
+    // router.HandleFunc("/signup", Signup).Methods("POST")
+
+    /*** login ***/
+    // $ curl
+    // router.HandleFunc("/login", Login).Methods("POST")
+
+    /******************************
+                events
+    ******************************/
+
     /*** index ***/
     // $ curl http://localhost:8000/events -v
     router.HandleFunc("/events", GetEvents).Methods("GET")
@@ -138,16 +164,20 @@ func initRouter() {
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"newnewnew","description":"whoa such novelty"}' -v
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"lol","description":"lol","user_id":1}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
-    // $ curl -X PUT http://localhost:8000/events/10 -d Description=older -d Name=so%20old -v
+    // $ curl -X PUT http://localhost:8000/events/2 -d description=older -d name=so%20old -v
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
     // $ curl -X DELETE http://localhost:8000/events/10 -v
     router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
+
+    /******************************
+                all done
+    ******************************/
 
     // router.Use(JwtAuthentication)
 
