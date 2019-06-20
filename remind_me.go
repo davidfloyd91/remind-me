@@ -80,7 +80,11 @@ var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
   	var event Event
 
   	db.First(&event, params["id"])
-  	db.Model(&event).Update("name", r.FormValue("Name"))
+    r.ParseForm()
+    db.Model(&event).Updates(Event{Name: r.FormValue("Name"), Description: r.FormValue("Description")})
+
+  	// db.Model(&event).Update("description", r.Form["Description"][0])
+    // db.Model(&event).Update("name", r.FormValue("Name"))
   	json.NewEncoder(w).Encode(&event)
 }
 
@@ -124,10 +128,6 @@ func initRouter() {
     // $ curl http://localhost:8000
     router.HandleFunc("/", Home)
 
-    /*** create ***/
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"nametime","description":"whoa descriptive"}' -v
-    router.HandleFunc("/events", CreateEvent).Methods("POST")
-
     /*** index ***/
     // $ curl http://localhost:8000/events -v
     router.HandleFunc("/events", GetEvents).Methods("GET")
@@ -136,8 +136,12 @@ func initRouter() {
     // $ curl http://localhost:8000/events/8 -v
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
+    /*** create ***/
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"nametime","description":"whoa descriptive"}' -v
+    router.HandleFunc("/events", CreateEvent).Methods("POST")
+
     /*** update ***/
-    // $ curl --request PUT http://localhost:8000/events/8?Name=lololol -v
+    // $ curl -X PUT http://localhost:8000/events/9 -d Description=uhhuh -d Name=uhhuh -v
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
