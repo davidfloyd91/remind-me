@@ -83,8 +83,7 @@ var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
     db.Model(&event).Updates(Event{Name: r.FormValue("Name"), Description: r.FormValue("Description")})
 
-  	// db.Model(&event).Update("description", r.Form["Description"][0])
-    // db.Model(&event).Update("name", r.FormValue("Name"))
+    w.Header().Set("Content-Type", "application/json")
   	json.NewEncoder(w).Encode(&event)
 }
 
@@ -94,6 +93,8 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
 
     db.First(&event, params["id"])
     db.Delete(&event)
+
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&event)
 }
 
@@ -125,7 +126,7 @@ func initRouter() {
     router := mux.NewRouter()
 
     /*** home ***/
-    // $ curl http://localhost:8000
+    // $ curl http://localhost:8000 -v
     router.HandleFunc("/", Home)
 
     /*** index ***/
@@ -137,15 +138,15 @@ func initRouter() {
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"nametime","description":"whoa descriptive"}' -v
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"newnewnew","description":"whoa such novelty"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
-    // $ curl -X PUT http://localhost:8000/events/9 -d Description=uhhuh -d Name=uhhuh -v
+    // $ curl -X PUT http://localhost:8000/events/10 -d Description=older -d Name=so%20old -v
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
-    // $ curl -X DELETE http://localhost:8000/events/3
+    // $ curl -X DELETE http://localhost:8000/events/10 -v
     router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
 
     // router.Use(JwtAuthentication)
