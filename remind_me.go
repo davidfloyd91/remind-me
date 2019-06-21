@@ -5,10 +5,13 @@ import (
     "encoding/json"
     "log"
     "net/http"
+    // "os"
 
+    // "golang.org/x/crypto/bcrypt"
+    // "github.com/dgrijalva/jwt-go"
     "github.com/gorilla/mux"
-    "github.com/rs/cors"
     "github.com/jinzhu/gorm"
+    "github.com/rs/cors"
     _ "github.com/lib/pq"
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
 )
@@ -24,9 +27,13 @@ type Event struct {
 type User struct {
 	gorm.Model
 
-  Username     string
+  Username     string `gorm:"username" json:"username"`
 	Email        string `gorm:"description" json:"description"`
   Digest       string `json:"-"`
+}
+
+type JWTToken struct {
+	Token        string `json:"token"`
 }
 
 var db *gorm.DB
@@ -73,6 +80,11 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("Welcome home!")
 }
+
+// var HashPassword = func (u User) (password string) string {
+//     bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
+//     return string(bytes)
+// }
 
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
