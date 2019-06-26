@@ -7,7 +7,7 @@ import (
     "net/http"
     // "os"
 
-    // "golang.org/x/crypto/bcrypt"
+    "golang.org/x/crypto/bcrypt"
     // "github.com/dgrijalva/jwt-go"
     "github.com/gorilla/mux"
     "github.com/jinzhu/gorm"
@@ -28,7 +28,7 @@ type User struct {
 	gorm.Model
 
   Username     string `gorm:"username" json:"username"`
-	Email        string `gorm:"description" json:"description"`
+	Email        string `gorm:"email" json:"email"`
   Digest       string `json:"-"`
 }
 
@@ -55,7 +55,7 @@ func main() {
 
     db, err = gorm.Open("postgres", connectionString)
 
-    db.AutoMigrate(&Event{})
+    db.AutoMigrate(&Event{}, &User{})
     defer db.Close()
 
     if err != nil {
@@ -81,10 +81,28 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode("Welcome home!")
 }
 
-// var HashPassword = func (u User) (password string) string {
-//     bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
-//     return string(bytes)
-// }
+var HashPassword = func(password string) string {
+    bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
+    return string(bytes)
+}
+
+var Signup = func(w http.ResponseWriter, r *http.Request) {
+    user := &User{}
+
+    // secure?
+    err = json.NewDecoder(r.Body).Decode(user)
+    if err != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      return
+    }
+
+    user.Digest = HashPassword(r.FormValue("password"))
+
+    db.Create(&user)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&user)
+}
 
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
@@ -156,8 +174,8 @@ func initRouter() {
     ******************************/
 
     /*** signup ***/
-    // $ curl
-    // router.HandleFunc("/signup", Signup).Methods("POST")
+    // $ curl -X POST http://localhost:8000/signup -d '{"username":"noob","email":"fun@fun.fun","password":"geeeez"}'
+    router.HandleFunc("/signup", Signup).Methods("POST")
 
     /*** login ***/
     // $ curl
