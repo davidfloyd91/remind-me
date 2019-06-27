@@ -130,8 +130,15 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
     var events []Event
     if timeframe == "all" {
         db.Where("user_id = ?", user_id).Find(&events)
+    } else if timeframe == "today" {
+        // test a lot more
+        db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '1d'", user_id).Find(&events)
+    } else if timeframe == "tomorrow" {
+        // test a lot more
+        db.Where("user_id = ? and scheduled between now()::date + interval '1d' and now()::date + interval '2d'", user_id).Find(&events)
     } else if timeframe == "this_week" {
-        db.Where("user_id = ? and scheduled between now()::date-extract(dow from now())::integer and now()::date-extract(dow from now())::integer+7", user_id).Find(&events)
+        // test a lot more
+        db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '7d'", user_id).Find(&events)
     }
 
     return events
@@ -141,6 +148,24 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
 var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     events := UserEventsHelper(params["user_id"], "all")
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&events)
+}
+
+/*** events today ***/
+var GetUserEventsToday = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    events := UserEventsHelper(params["user_id"], "today")
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&events)
+}
+
+/*** events tomorrow ***/
+var GetUserEventsTomorrow = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    events := UserEventsHelper(params["user_id"], "tomorrow")
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
@@ -325,7 +350,15 @@ func initRouter() {
     // $ curl http://localhost:8000/users/1/events -v
     router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
 
-    // /*** events this week ***/
+    /*** events today ***/
+    // $ curl http://localhost:8000/users/1/events/today -v
+    router.HandleFunc("/users/{user_id}/events/today", GetUserEventsToday).Methods("GET")
+
+    /*** events tomorrow ***/
+    // $ curl http://localhost:8000/users/1/events/tomorrow -v
+    router.HandleFunc("/users/{user_id}/events/tomorrow", GetUserEventsTomorrow).Methods("GET")
+
+    /*** events this week ***/
     // $ curl http://localhost:8000/users/1/events/week -v
     router.HandleFunc("/users/{user_id}/events/week", GetUserEventsThisWeek).Methods("GET")
 
