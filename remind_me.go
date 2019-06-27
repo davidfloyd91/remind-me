@@ -16,7 +16,7 @@ import (
     _ "github.com/lib/pq"
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
 
-    // "reflect" // check types: reflect.TypeOf(thing)
+    // "reflect" // check data type: reflect.TypeOf(thing)
 )
 
 type Event struct {
@@ -78,11 +78,11 @@ func main() {
                did that
     ******************************/
 
+    /*** router time ***/
     initRouter()
 }
 
 /*** home ***/
-
 var Home = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("Welcome home!")
@@ -91,7 +91,6 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
 /******************************
              users
 ******************************/
-
 var Signup = func(w http.ResponseWriter, r *http.Request) {
     user := &User{}
 
@@ -171,7 +170,18 @@ func (user User) GenerateJWT() (JWTToken, error) {
 /******************************
             events
 ******************************/
+/*** index ***/
+var GetEvents = func(w http.ResponseWriter, r *http.Request) {
+    var events []Event
 
+    // add error handling
+    db.Find(&events)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&events)
+}
+
+/*** show ***/
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     var event Event
@@ -183,44 +193,7 @@ var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&event)
 }
 
-var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
-    params := mux.Vars(r)
-  	var event Event
-
-    // add error handling
-  	db.First(&event, params["id"])
-    r.ParseForm()
-
-    // add error handling
-    db.Model(&event).Updates(Event{Name: r.FormValue("name"), Description: r.FormValue("description")})
-
-    w.Header().Set("Content-Type", "application/json")
-  	json.NewEncoder(w).Encode(&event)
-}
-
-var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
-    params := mux.Vars(r)
-    var event Event
-
-    // add error handling
-    db.First(&event, params["id"])
-    // add error handling
-    db.Delete(&event)
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(&event)
-}
-
-var GetEvents = func(w http.ResponseWriter, r *http.Request) {
-    var events []Event
-
-    // add error handling
-    db.Find(&events)
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(&events)
-}
-
+/*** create ***/
 var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     event := &Event{}
 
@@ -237,11 +210,41 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(event)
 }
 
+/*** update ***/
+var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+  	var event Event
+
+    // add error handling
+  	db.First(&event, params["id"])
+    r.ParseForm()
+
+    // add error handling
+    db.Model(&event).Updates(Event{Name: r.FormValue("name"), Description: r.FormValue("description")})
+
+    w.Header().Set("Content-Type", "application/json")
+  	json.NewEncoder(w).Encode(&event)
+}
+
+/*** delete ***/
+var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    var event Event
+
+    // add error handling
+    db.First(&event, params["id"])
+    // add error handling
+    db.Delete(&event)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&event)
+}
+
 /******************************
             router
 ******************************/
-
 func initRouter() {
+    /*** mux ***/
     router := mux.NewRouter()
 
     /*** home ***/
@@ -252,6 +255,9 @@ func initRouter() {
     /******************************
                  users
     ******************************/
+    /*** index ***/
+    // $ curl http://localhost:8000/users -v
+    router.HandleFunc("/users", GetUsers).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
@@ -261,14 +267,9 @@ func initRouter() {
     // $ curl -X POST http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}' -v
     router.HandleFunc("/login", Login).Methods("POST")
 
-    /*** index ***/
-    // $ curl http://localhost:8000/users -v
-    router.HandleFunc("/users", GetUsers).Methods("GET")
-
     /******************************
                 events
     ******************************/
-
     /*** index ***/
     // $ curl http://localhost:8000/events -v
     router.HandleFunc("/events", GetEvents).Methods("GET")
@@ -278,24 +279,26 @@ func initRouter() {
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"lol","description":"lol","user_id":1}' -v
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
-    // $ curl -X PUT http://localhost:8000/events/2 -d description=older -d name=so%20old -v
+    // $ curl -X PUT http://localhost:8000/events/4 -d description=hemisemidope -d name=i%20suppose -v
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
     // $ curl -X DELETE http://localhost:8000/events/10 -v
     router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
-
     /******************************
                 all done
     ******************************/
 
+    /*** turn this on some day ***/
     // router.Use(JwtAuthentication) // herehereherehereherehereherehereherehere
 
+    // use mux as middleware
     handler := cors.Default().Handler(router)
 
+    // start server
     log.Fatal(http.ListenAndServe(":8000", handler))
 }
