@@ -15,8 +15,6 @@ import (
     "github.com/rs/cors"
     _ "github.com/lib/pq"
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
-
-    // "reflect" // check data type: reflect.TypeOf(thing)
 )
 
 /* ========================================================================== */
@@ -33,8 +31,6 @@ type Event struct {
     UserID       uint      `gorm:"user_id" json:"user_id"`
   	Name         string    `gorm:"name" json:"name"`
   	Description  string    `gorm:"description" json:"description"`
-
-    // hereherehereherehere i'm not entirely sure this works yet
     Scheduled         time.Time `gorm:"scheduled" json:"scheduled"`
 }
 
@@ -352,7 +348,6 @@ func initRouter() {
 
     /*** home ***/
     // $ curl http://localhost:8000 -v
-    // "Welcome home!"
     router.HandleFunc("/", Home)
 
     /******************************
@@ -418,7 +413,7 @@ func initRouter() {
     ******************************/
 
     /*** turn this on some day ***/
-    // router.Use(JwtAuthentication) // herehereherehereherehereherehereherehere
+    // router.Use(JwtAuthentication)
 
     // use mux as middleware
     handler := cors.Default().Handler(router)
