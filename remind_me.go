@@ -33,7 +33,7 @@ type Event struct {
     UserID       uint      `gorm:"user_id" json:"user_id"`
   	Name         string    `gorm:"name" json:"name"`
   	Description  string    `gorm:"description" json:"description"`
-    
+
     // hereherehereherehere i'm not entirely sure this works yet
     When         time.Time `gorm:"when" json:"when"`
 }
@@ -125,16 +125,33 @@ var GetUsers = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&users)
 }
 
+/*** events helper ***/
+var UserEventsHelper = func(user_id string) []Event {
+    var events []Event
+    db.Where("user_id = ?", user_id).Find(&events)
+    
+    return events
+}
+
 /*** events ***/
 var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    var events []Event
-
-    db.Where("user_id = ?", params["user_id"]).Find(&events)
+    events := UserEventsHelper(params["user_id"])
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
+
+// /*** events today ***/
+// var GetUserEventsToday = func(w http.ResponseWriter, r *http.Request) {
+//     params := mux.Vars(r)
+//     var events []Event
+//
+//     db.Where("user_id = ?", params["user_id"]).Find(&events)
+//
+//     w.Header().Set("Content-Type", "application/json")
+//     json.NewEncoder(w).Encode(&events)
+// }
 
 /*** signup ***/
 var Signup = func(w http.ResponseWriter, r *http.Request) {
@@ -305,6 +322,22 @@ func initRouter() {
     /*** events ***/
     // $ curl http://localhost:8000/users/1/events -v
     router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
+
+    // /*** events today ***/
+    // // $ curl http://localhost:8000/users/1/events -v
+    // router.HandleFunc("/users/{user_id}/events/today", GetUserEventsToday).Methods("GET")
+    //
+    // /*** events tomorrow ***/
+    // // $ curl http://localhost:8000/users/1/events -v
+    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
+    //
+    // /*** events this week ***/
+    // // $ curl http://localhost:8000/users/1/events -v
+    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
+    //
+    // /*** events next week ***/
+    // // $ curl http://localhost:8000/users/1/events -v
+    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
