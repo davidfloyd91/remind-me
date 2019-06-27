@@ -142,7 +142,7 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
     } else if timeframe == "this_week" {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '7d'", user_id).Find(&events)
-    /*** next week ***/ // doesn't work
+    /*** next week ***/ // doesn't work -- adds 7 days
     // } else if timeframe == "next_week" {
     //     // test a lot more
     //     db.Where("user_id = ? and scheduled between now()::date + interval '1 week' and now()::date + interval '2 week'", user_id).Find(&events)
