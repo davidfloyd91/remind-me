@@ -15,26 +15,30 @@ import (
     "github.com/rs/cors"
     _ "github.com/lib/pq"
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
+
+    // "reflect" // check types: reflect.TypeOf(thing)
 )
 
 type Event struct {
-	gorm.Model
+  	gorm.Model
 
-  UserID       uint   `gorm:"user_id" json:"user_id"`
-	Name         string `gorm:"name" json:"name"`
-	Description  string `gorm:"description" json:"description"`
+    // ID        uint   provided by gorm?
+    UserID       uint   `gorm:"user_id" json:"user_id"`
+  	Name         string `gorm:"name" json:"name"`
+  	Description  string `gorm:"description" json:"description"`
 }
 
 type User struct {
-	gorm.Model
+  	gorm.Model
 
-  Username     string `gorm:"username" json:"username"`
-	Email        string `gorm:"email" json:"email"`
-  Digest       string `json:"-"`
+    // ID        uint   provided by gorm?
+    Username     string `gorm:"username" json:"username"`
+  	Email        string `gorm:"email" json:"email"`
+    Digest       string `json:"-"`
 }
 
 type JWTToken struct {
-	Token        string `json:"token"`
+  	Token        string `json:"token"`
 }
 
 var db *gorm.DB
@@ -77,15 +81,16 @@ func main() {
     initRouter()
 }
 
+/*** home ***/
+
 var Home = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode("Welcome home!")
 }
 
-var HashPassword = func(password string) string {
-    bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
-    return string(bytes)
-}
+/******************************
+             users
+******************************/
 
 var Signup = func(w http.ResponseWriter, r *http.Request) {
     user := &User{}
@@ -129,11 +134,32 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+var GetUsers = func(w http.ResponseWriter, r *http.Request) {
+    var users []User
+
+    db.Find(&users)
+
+    w.Header().Set("Content-Type", "application/json")
+
+    json.NewEncoder(w).Encode(&users)
+}
+
+/*** user helpers ***/
+var HashPassword = func(password string) string {
+    bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
+    return string(bytes)
+}
+
+func (user User) CheckPassword(password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(user.Digest), []byte(password))
+    return err == nil
+}
+
 func (user User) GenerateJWT() (JWTToken, error) {
     signing_key := []byte(os.Getenv("JWT_SECRET"))
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
         "exp": time.Now().Add(time.Hour * 1 * 1).Unix(),
-        // "user_id": int(user.id), // gonna have to do something about this probably
+        "user_id": int(user.ID), // provided by gorm?
         "name": user.Username,
         "email": user.Email,
     })
@@ -142,11 +168,9 @@ func (user User) GenerateJWT() (JWTToken, error) {
     return JWTToken{token_string}, err
 }
 
-// trick out all your funcs like this
-func (user User) CheckPassword(password string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(user.Digest), []byte(password))
-    return err == nil
-}
+/******************************
+            events
+******************************/
 
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
@@ -213,11 +237,16 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(event)
 }
 
+/******************************
+            router
+******************************/
+
 func initRouter() {
     router := mux.NewRouter()
 
     /*** home ***/
     // $ curl http://localhost:8000 -v
+    // "Welcome home!"
     router.HandleFunc("/", Home)
 
     /******************************
@@ -225,12 +254,16 @@ func initRouter() {
     ******************************/
 
     /*** signup ***/
-    // $ curl -X POST http://localhost:8000/signup -d '{"username":"noob","email":"fun@fun.fun","password":"geeeez"}'
+    // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
     router.HandleFunc("/signup", Signup).Methods("POST")
 
     /*** login ***/
-    // $ curl -X POST http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}'
+    // $ curl -X POST http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}' -v
     router.HandleFunc("/login", Login).Methods("POST")
+
+    /*** index ***/
+    // $ curl http://localhost:8000/users -v
+    router.HandleFunc("/users", GetUsers).Methods("GET")
 
     /******************************
                 events
@@ -241,7 +274,7 @@ func initRouter() {
     router.HandleFunc("/events", GetEvents).Methods("GET")
 
     /*** show ***/
-    // $ curl http://localhost:8000/events/8 -v
+    // $ curl http://localhost:8000/events/2 -v
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
@@ -260,7 +293,7 @@ func initRouter() {
                 all done
     ******************************/
 
-    // router.Use(JwtAuthentication)
+    // router.Use(JwtAuthentication) // herehereherehereherehereherehereherehere
 
     handler := cors.Default().Handler(router)
 
