@@ -29,19 +29,22 @@ import (
 type Event struct {
   	gorm.Model
 
-    // ID        uint   provided by gorm?
-    UserID       uint   `gorm:"user_id" json:"user_id"`
-  	Name         string `gorm:"name" json:"name"`
-  	Description  string `gorm:"description" json:"description"`
+    // ID        uint      provided by gorm?
+    UserID       uint      `gorm:"user_id" json:"user_id"`
+  	Name         string    `gorm:"name" json:"name"`
+  	Description  string    `gorm:"description" json:"description"`
+    
+    // hereherehereherehere i'm not entirely sure this works yet
+    When         time.Time `gorm:"when" json:"when"`
 }
 
 type User struct {
   	gorm.Model
 
     // ID        uint
-    Username     string `gorm:"username" json:"username"`
-  	Email        string `gorm:"email" json:"email"`
-    Digest       string `json:"-"`
+    Username     string    `gorm:"username" json:"username"`
+  	Email        string    `gorm:"email" json:"email"`
+    Digest       string    `json:"-"`
 }
 
 type JWTToken struct {
@@ -323,7 +326,8 @@ func initRouter() {
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5}' -v
+    // hereherehereherehere i'm not entirely sure this works yet
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5,"when":"2019-07-20T23:10:00.000000-04:00"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
