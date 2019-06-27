@@ -130,15 +130,22 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
     var events []Event
     if timeframe == "all" {
         db.Where("user_id = ?", user_id).Find(&events)
+    /*** today ***/
     } else if timeframe == "today" {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '1d'", user_id).Find(&events)
+    /*** tomorrow ***/
     } else if timeframe == "tomorrow" {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date + interval '1d' and now()::date + interval '2d'", user_id).Find(&events)
+    /*** this week ***/
     } else if timeframe == "this_week" {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '7d'", user_id).Find(&events)
+    /*** next week ***/ // doesn't work
+    // } else if timeframe == "next_week" {
+    //     // test a lot more
+    //     db.Where("user_id = ? and scheduled between now()::date + interval '1 week' and now()::date + interval '2 week'", user_id).Find(&events)
     }
 
     return events
@@ -179,6 +186,15 @@ var GetUserEventsThisWeek = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
+
+// /*** events next week ***/
+// var GetUserEventsNextWeek = func(w http.ResponseWriter, r *http.Request) {
+//     params := mux.Vars(r)
+//     events := UserEventsHelper(params["user_id"], "next_week")
+//
+//     w.Header().Set("Content-Type", "application/json")
+//     json.NewEncoder(w).Encode(&events)
+// }
 
 /*** signup ***/
 var Signup = func(w http.ResponseWriter, r *http.Request) {
@@ -361,6 +377,10 @@ func initRouter() {
     /*** events this week ***/
     // $ curl http://localhost:8000/users/1/events/week -v
     router.HandleFunc("/users/{user_id}/events/week", GetUserEventsThisWeek).Methods("GET")
+
+    /*** events next week ***/
+    // $ curl http://localhost:8000/users/1/events/next -v
+    // router.HandleFunc("/users/{user_id}/events/next", GetUserEventsNextWeek).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
