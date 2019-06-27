@@ -5,10 +5,11 @@ import (
     "encoding/json"
     "log"
     "net/http"
-    // "os"
+    "os"
+    "time"
 
     "golang.org/x/crypto/bcrypt"
-    // "github.com/dgrijalva/jwt-go"
+    "github.com/dgrijalva/jwt-go"
     "github.com/gorilla/mux"
     "github.com/jinzhu/gorm"
     "github.com/rs/cors"
@@ -92,22 +93,66 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
     // secure?
     err = json.NewDecoder(r.Body).Decode(user)
     if err != nil {
-      w.WriteHeader(http.StatusBadRequest)
-      return
+        w.WriteHeader(http.StatusBadRequest)
+        return
     }
 
     user.Digest = HashPassword(r.FormValue("password"))
 
-    db.Create(&user)
+    err = db.Create(&user).Error
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+    }
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&user)
+}
+
+var Login = func(w http.ResponseWriter, r *http.Request) {
+    var user User
+
+    db.Where("username = ?", r.FormValue("username")).Find(&user)
+
+    w.Header().Set("Content-Type", "application/json")
+
+    if user.CheckPassword(r.FormValue("password")) {
+        token, err := user.GenerateJWT()
+        if err != nil {
+            w.WriteHeader(http.StatusUnauthorized)
+            return
+        }
+
+        json.NewEncoder(w).Encode(&token)
+    } else {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+}
+
+func (user User) GenerateJWT() (JWTToken, error) {
+    signing_key := []byte(os.Getenv("JWT_SECRET"))
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "exp": time.Now().Add(time.Hour * 1 * 1).Unix(),
+        // "user_id": int(user.id), // gonna have to do something about this probably
+        "name": user.Username,
+        "email": user.Email,
+    })
+
+    token_string, err := token.SignedString(signing_key)
+    return JWTToken{token_string}, err
+}
+
+// trick out all your funcs like this
+func (user User) CheckPassword(password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(user.Digest), []byte(password))
+    return err == nil
 }
 
 var GetEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     var event Event
 
+    // add error handling
     db.First(&event, params["id"])
 
     w.Header().Set("Content-Type", "application/json")
@@ -118,9 +163,11 @@ var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
   	var event Event
 
+    // add error handling
   	db.First(&event, params["id"])
     r.ParseForm()
 
+    // add error handling
     db.Model(&event).Updates(Event{Name: r.FormValue("name"), Description: r.FormValue("description")})
 
     w.Header().Set("Content-Type", "application/json")
@@ -131,7 +178,9 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     var event Event
 
+    // add error handling
     db.First(&event, params["id"])
+    // add error handling
     db.Delete(&event)
 
     w.Header().Set("Content-Type", "application/json")
@@ -141,6 +190,7 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
 var GetEvents = func(w http.ResponseWriter, r *http.Request) {
     var events []Event
 
+    // add error handling
     db.Find(&events)
 
     w.Header().Set("Content-Type", "application/json")
@@ -156,6 +206,7 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // add error handling
     db.Create(&event)
 
     w.Header().Set("Content-Type", "application/json")
@@ -178,8 +229,8 @@ func initRouter() {
     router.HandleFunc("/signup", Signup).Methods("POST")
 
     /*** login ***/
-    // $ curl
-    // router.HandleFunc("/login", Login).Methods("POST")
+    // $ curl -X POST http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}'
+    router.HandleFunc("/login", Login).Methods("POST")
 
     /******************************
                 events
