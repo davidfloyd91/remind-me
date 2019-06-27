@@ -19,6 +19,13 @@ import (
     // "reflect" // check data type: reflect.TypeOf(thing)
 )
 
+/* ========================================================================== */
+/* ========================================================================== */
+
+/******************************
+            models
+******************************/
+
 type Event struct {
   	gorm.Model
 
@@ -31,7 +38,7 @@ type Event struct {
 type User struct {
   	gorm.Model
 
-    // ID        uint   provided by gorm?
+    // ID        uint
     Username     string `gorm:"username" json:"username"`
   	Email        string `gorm:"email" json:"email"`
     Digest       string `json:"-"`
@@ -41,8 +48,15 @@ type JWTToken struct {
   	Token        string `json:"token"`
 }
 
+/* ========================================================================== */
+/* ========================================================================== */
+
 var db *gorm.DB
 var err error
+
+/******************************
+             main
+******************************/
 
 func main() {
     /******************************
@@ -82,6 +96,12 @@ func main() {
     initRouter()
 }
 
+/* ========================================================================== */
+/* ========================================================================== */
+
+/******************************
+            handlers
+******************************/
 /*** home ***/
 var Home = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
@@ -91,6 +111,28 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
 /******************************
              users
 ******************************/
+/*** index ***/
+var GetUsers = func(w http.ResponseWriter, r *http.Request) {
+    var users []User
+
+    db.Find(&users)
+
+    w.Header().Set("Content-Type", "application/json")
+
+    json.NewEncoder(w).Encode(&users)
+}
+
+/*** events index ***/
+var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
+    var users []User
+}
+
+/*** event show ***/
+var GetUserEvent = func(w http.ResponseWriter, r *http.Request) {
+    var user User
+}
+
+/*** signup ***/
 var Signup = func(w http.ResponseWriter, r *http.Request) {
     user := &User{}
 
@@ -112,6 +154,7 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&user)
 }
 
+/*** login ***/
 var Login = func(w http.ResponseWriter, r *http.Request) {
     var user User
 
@@ -131,16 +174,6 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
-}
-
-var GetUsers = func(w http.ResponseWriter, r *http.Request) {
-    var users []User
-
-    db.Find(&users)
-
-    w.Header().Set("Content-Type", "application/json")
-
-    json.NewEncoder(w).Encode(&users)
 }
 
 /*** user helpers ***/
@@ -240,6 +273,9 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&event)
 }
 
+/* ========================================================================== */
+/* ========================================================================== */
+
 /******************************
             router
 ******************************/
@@ -258,6 +294,12 @@ func initRouter() {
     /*** index ***/
     // $ curl http://localhost:8000/users -v
     router.HandleFunc("/users", GetUsers).Methods("GET")
+
+    /*** events index ***/
+    router.HandleFunc("/users/events", GetUserEvents).Methods("GET")
+
+    /*** event show ***/
+    router.HandleFunc("/users/events/{id}", GetUserEvent).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
