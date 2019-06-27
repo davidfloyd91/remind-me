@@ -122,7 +122,7 @@ var GetUsers = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&users)
 }
 
-/*** events index ***/
+/*** events ***/
 var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     var events []Event
@@ -132,11 +132,6 @@ var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
-
-// /*** event show ***/
-// var GetUserEvent = func(w http.ResponseWriter, r *http.Request) {
-//     var event Event
-// }
 
 /*** signup ***/
 var Signup = func(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +254,10 @@ var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
 
     // add error handling
-    db.Model(&event).Updates(Event{Name: r.FormValue("name"), Description: r.FormValue("description")})
+    db.Model(&event).Updates(Event{
+      Name: r.FormValue("name"),
+      Description: r.FormValue("description"),
+    })
 
     w.Header().Set("Content-Type", "application/json")
   	json.NewEncoder(w).Encode(&event)
@@ -301,12 +299,9 @@ func initRouter() {
     // $ curl http://localhost:8000/users -v
     router.HandleFunc("/users", GetUsers).Methods("GET")
 
-    /*** events index ***/
+    /*** events ***/
     // $ curl http://localhost:8000/users/1/events -v
     router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
-
-    // /*** event show ***/
-    // router.HandleFunc("/users/{user_id}/events/{event_id}", GetUserEvent).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
