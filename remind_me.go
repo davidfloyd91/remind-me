@@ -35,7 +35,7 @@ type Event struct {
   	Description  string    `gorm:"description" json:"description"`
 
     // hereherehereherehere i'm not entirely sure this works yet
-    When         time.Time `gorm:"when" json:"when"`
+    Scheduled         time.Time `gorm:"scheduled" json:"scheduled"`
 }
 
 type User struct {
@@ -126,32 +126,34 @@ var GetUsers = func(w http.ResponseWriter, r *http.Request) {
 }
 
 /*** events helper ***/
-var UserEventsHelper = func(user_id string) []Event {
+var UserEventsHelper = func(user_id string, timeframe string) []Event {
     var events []Event
-    db.Where("user_id = ?", user_id).Find(&events)
-    
+    if timeframe == "all" {
+        db.Where("user_id = ?", user_id).Find(&events)
+    } else if timeframe == "this_week" {
+        db.Where("user_id = ? and scheduled between now()::date-extract(dow from now())::integer and now()::date-extract(dow from now())::integer+7", user_id).Find(&events)
+    }
+
     return events
 }
 
 /*** events ***/
 var GetUserEvents = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    events := UserEventsHelper(params["user_id"])
+    events := UserEventsHelper(params["user_id"], "all")
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
 }
 
-// /*** events today ***/
-// var GetUserEventsToday = func(w http.ResponseWriter, r *http.Request) {
-//     params := mux.Vars(r)
-//     var events []Event
-//
-//     db.Where("user_id = ?", params["user_id"]).Find(&events)
-//
-//     w.Header().Set("Content-Type", "application/json")
-//     json.NewEncoder(w).Encode(&events)
-// }
+/*** events this week ***/
+var GetUserEventsThisWeek = func(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    events := UserEventsHelper(params["user_id"], "this_week")
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(&events)
+}
 
 /*** signup ***/
 var Signup = func(w http.ResponseWriter, r *http.Request) {
@@ -323,21 +325,9 @@ func initRouter() {
     // $ curl http://localhost:8000/users/1/events -v
     router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
 
-    // /*** events today ***/
-    // // $ curl http://localhost:8000/users/1/events -v
-    // router.HandleFunc("/users/{user_id}/events/today", GetUserEventsToday).Methods("GET")
-    //
-    // /*** events tomorrow ***/
-    // // $ curl http://localhost:8000/users/1/events -v
-    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
-    //
     // /*** events this week ***/
-    // // $ curl http://localhost:8000/users/1/events -v
-    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
-    //
-    // /*** events next week ***/
-    // // $ curl http://localhost:8000/users/1/events -v
-    // router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
+    // $ curl http://localhost:8000/users/1/events/week -v
+    router.HandleFunc("/users/{user_id}/events/week", GetUserEventsThisWeek).Methods("GET")
 
     /*** signup ***/
     // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
@@ -360,7 +350,7 @@ func initRouter() {
 
     /*** create ***/
     // hereherehereherehere i'm not entirely sure this works yet
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5,"when":"2019-07-20T23:10:00.000000-04:00"}' -v
+    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5,"when":"2019-06-27T23:10:00.000000-04:00"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
