@@ -272,26 +272,20 @@ func (user User) GenerateJWT() (JWT, error) {
 
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-    // token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-    //     "exp": time.Now().Add(time.Hour * 24 * 3).Unix(),
-    //     "user_id": int(user.ID), // provided by gorm?
-    // })
-
     token_string, err := token.SignedString(signing_key)
     return JWT{token_string}, err
 }
 
-// https://github.com/adigunhammedolalekan/go-contacts/blob/master/app/auth.go
 var JwtAuthentication = func(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         requestPath := r.URL.Path
 
-        if requestPath == "/signup" || requestPath == "/login" {
+        if requestPath == "/" || requestPath == "/signup" || requestPath == "/login" {
             next.ServeHTTP(w, r)
             return
         }
 
-        tokenHeader := r.Header.Get("Authorization") // what sticks token in Authroization header?
+        tokenHeader := r.Header.Get("Token")
 
         w.Header().Set("Content-Type", "application/json")
 
@@ -402,34 +396,34 @@ func initRouter() {
     router := mux.NewRouter()
 
     /*** home ***/
-    // $ curl http://localhost:8000 -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000 -v
     router.HandleFunc("/", Home)
 
     /******************************
                  users
     ******************************/
     /*** index ***/
-    // $ curl http://localhost:8000/users -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users -v
     router.HandleFunc("/users", GetUsers).Methods("GET")
 
     /*** events ***/
-    // $ curl http://localhost:8000/users/1/events -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users/1/events -v
     router.HandleFunc("/users/{user_id}/events", GetUserEvents).Methods("GET")
 
     /*** events today ***/
-    // $ curl http://localhost:8000/users/1/events/today -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users/1/events/today -v
     router.HandleFunc("/users/{user_id}/events/today", GetUserEventsToday).Methods("GET")
 
     /*** events tomorrow ***/
-    // $ curl http://localhost:8000/users/1/events/tomorrow -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users/1/events/tomorrow -v
     router.HandleFunc("/users/{user_id}/events/tomorrow", GetUserEventsTomorrow).Methods("GET")
 
     /*** events this week ***/
-    // $ curl http://localhost:8000/users/1/events/week -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users/1/events/week -v
     router.HandleFunc("/users/{user_id}/events/week", GetUserEventsThisWeek).Methods("GET")
 
     /*** events next week ***/
-    // $ curl http://localhost:8000/users/1/events/next -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/users/1/events/next -v
     // router.HandleFunc("/users/{user_id}/events/next", GetUserEventsNextWeek).Methods("GET")
 
     /*** signup ***/
@@ -444,24 +438,23 @@ func initRouter() {
                 events
     ******************************/
     /*** index ***/
-    // $ curl http://localhost:8000/events -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/events -v
     router.HandleFunc("/events", GetEvents).Methods("GET")
 
     /*** show ***/
-    // $ curl http://localhost:8000/events/2 -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/events/2 -v
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // hereherehereherehere i'm not entirely sure this works yet
-    // $ curl -H "Content-Type: application/json" http://localhost:8000/events -d '{"name":"isuppose","description":"dope","user_id":5,"when":"2019-06-27T23:10:00.000000-04:00"}' -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/events -d '{"name":"gee whiz","description":"you bet","user_id":11,"when":"2019-06-30T23:10:00.000000-04:00"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
-    // $ curl -X PUT http://localhost:8000/events/4 -d description=hemisemidope -d name=i%20suppose -v
+    // $ curl -X PUT -H "Token: nicetrygithub" http://localhost:8000/events/4 -d description=hemisemidope -d name=i%20suppose -v
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
-    // $ curl -X DELETE http://localhost:8000/events/10 -v
+    // $ curl -H "Token: nicetrygithub" -X DELETE http://localhost:8000/events/10 -v
     router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
     /******************************
                 all done
