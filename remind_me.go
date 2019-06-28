@@ -462,8 +462,15 @@ func initRouter() {
 
     router.Use(JwtAuthentication)
 
+    // cors config
+    c := cors.New(cors.Options{
+        AllowedOrigins: []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
+        AllowCredentials: true,
+        AllowedHeaders: []string{"Token"},
+    })
+
     // use mux as middleware
-    handler := cors.Default().Handler(router)
+    handler := c.Handler(router)
 
     // start server
     log.Fatal(http.ListenAndServe(":8000", handler))
