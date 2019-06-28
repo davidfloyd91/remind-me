@@ -31,7 +31,7 @@ type Event struct {
     UserID       uint      `gorm:"user_id" json:"user_id"`
   	Name         string    `gorm:"name" json:"name"`
   	Description  string    `gorm:"description" json:"description"`
-    Scheduled         time.Time `gorm:"scheduled" json:"scheduled"`
+    Scheduled    time.Time `gorm:"scheduled" json:"scheduled"`
 }
 
 type User struct {
@@ -210,8 +210,15 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusUnauthorized)
     }
 
+    token, err := user.GenerateJWT()
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(&user)
+    // json.NewEncoder(w).Encode(&user)
+
+    json.NewEncoder(w).Encode(&token)
 }
 
 /*** login ***/
@@ -250,10 +257,8 @@ func (user User) CheckPassword(password string) bool {
 func (user User) GenerateJWT() (JWTToken, error) {
     signing_key := []byte(os.Getenv("JWT_SECRET"))
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-        "exp": time.Now().Add(time.Hour * 1 * 1).Unix(),
+        "exp": time.Now().Add(time.Hour * 24 * 3).Unix(),
         "user_id": int(user.ID), // provided by gorm?
-        "name": user.Username,
-        "email": user.Email,
     })
 
     token_string, err := token.SignedString(signing_key)
