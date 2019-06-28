@@ -1,6 +1,7 @@
 package main
 
 import (
+    // "context"
     "fmt"
     "encoding/json"
     "log"
@@ -43,8 +44,13 @@ type User struct {
     Digest       string    `json:"-"`
 }
 
-type JWTToken struct {
-  	Token        string `json:"token"`
+type Claims struct {
+    UserID       uint
+    jwt.StandardClaims
+}
+
+type JWT struct {
+  	Token        string
 }
 
 /* ========================================================================== */
@@ -254,15 +260,59 @@ func (user User) CheckPassword(password string) bool {
     return err == nil
 }
 
-func (user User) GenerateJWT() (JWTToken, error) {
+func (user User) GenerateJWT() (JWT, error) {
     signing_key := []byte(os.Getenv("JWT_SECRET"))
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-        "exp": time.Now().Add(time.Hour * 24 * 3).Unix(),
-        "user_id": int(user.ID), // provided by gorm?
-    })
+
+    claims := &Claims{
+        UserID: user.ID,
+        StandardClaims: jwt.StandardClaims{
+            ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+        },
+    }
+
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+    // token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+    //     "exp": time.Now().Add(time.Hour * 24 * 3).Unix(),
+    //     "user_id": int(user.ID), // provided by gorm?
+    // })
 
     token_string, err := token.SignedString(signing_key)
-    return JWTToken{token_string}, err
+    return JWT{token_string}, err
+}
+
+// https://github.com/adigunhammedolalekan/go-contacts/blob/master/app/auth.go
+var JwtAuthentication = func(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        requestPath := r.URL.Path
+
+        if requestPath == "/signup" || requestPath == "/login" {
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        tokenHeader := r.Header.Get("Authorization") // what sticks token in Authroization header?
+
+        w.Header().Set("Content-Type", "application/json")
+
+        if tokenHeader == "" {
+            w.WriteHeader(http.StatusForbidden)
+            return
+        }
+
+        tk := &Claims{}
+
+        token, err := jwt.ParseWithClaims(tokenHeader, tk, func(token *jwt.Token) (interface{}, error) {
+            return []byte(os.Getenv("JWT_SECRET")), nil
+        })
+
+        if err != nil || !token.Valid {
+            w.WriteHeader(http.StatusForbidden)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    });
 }
 
 /******************************
@@ -417,8 +467,7 @@ func initRouter() {
                 all done
     ******************************/
 
-    /*** turn this on some day ***/
-    // router.Use(JwtAuthentication)
+    router.Use(JwtAuthentication)
 
     // use mux as middleware
     handler := cors.Default().Handler(router)
