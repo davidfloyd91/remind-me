@@ -446,7 +446,7 @@ func initRouter() {
     router.HandleFunc("/events/{id}", GetEvent).Methods("GET")
 
     /*** create ***/
-    // $ curl -H "Token: nicetrygithub" http://localhost:8000/events -d '{"name":"gee whiz","description":"you bet","user_id":11,"when":"2019-06-30T23:10:00.000000-04:00"}' -v
+    // $ curl -H "Token: nicetrygithub" http://localhost:8000/events -d '{"name":"gee whiz","description":"you bet","user_id":11,"scheduled":"2019-06-30T23:10:00.000000-04:00"}' -v
     router.HandleFunc("/events", CreateEvent).Methods("POST")
 
     /*** update ***/
