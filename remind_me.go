@@ -466,7 +466,8 @@ func initRouter() {
     c := cors.New(cors.Options{
         AllowedOrigins: []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
         AllowCredentials: true,
-        AllowedHeaders: []string{"Token"},
+        // figure out which headers to allow
+        AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
     })
 
     // use mux as middleware
