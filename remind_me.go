@@ -140,7 +140,7 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date + interval '1d' and now()::date + interval '2d'", user_id).Find(&events)
     /*** this week ***/
-    } else if timeframe == "this_week" {
+    } else if timeframe == "week" {
         // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '7d'", user_id).Find(&events)
     /*** next week ***/ // doesn't work -- adds 7 days
@@ -182,7 +182,7 @@ var GetUserEventsTomorrow = func(w http.ResponseWriter, r *http.Request) {
 /*** events this week ***/
 var GetUserEventsThisWeek = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    events := UserEventsHelper(params["user_id"], "this_week")
+    events := UserEventsHelper(params["user_id"], "week")
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(&events)
@@ -221,6 +221,7 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
+
     w.Header().Set("Content-Type", "application/json")
     // json.NewEncoder(w).Encode(&user)
 
@@ -243,7 +244,7 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     if bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(user.Password)) == nil {
-        token, err := user.GenerateJWT()
+        token, err := storedUser.GenerateJWT()
         if err != nil {
             w.WriteHeader(http.StatusUnauthorized)
             return
