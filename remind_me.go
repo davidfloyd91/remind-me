@@ -203,15 +203,11 @@ var GetUserEventsThisWeek = func(w http.ResponseWriter, r *http.Request) {
 var Signup = func(w http.ResponseWriter, r *http.Request) {
     user := &User{}
 
-    // secure?
     err = json.NewDecoder(r.Body).Decode(user)
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
         return
     }
-
-    r.ParseForm()
-    fmt.Println(r.FormValue("password"))
 
     bytes, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 4)
     user.Password = string(bytes)
@@ -234,15 +230,20 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
 
 /*** login ***/
 var Login = func(w http.ResponseWriter, r *http.Request) {
-    var user User
+    user := &User{}
+    storedUser := &User{}
 
-    r.ParseForm()
+    err = json.NewDecoder(r.Body).Decode(user)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
 
-    db.Where("username = ?", r.FormValue("username")).Find(&user)
+    db.Where("username = ?", user.Username).Find(&storedUser)
 
     w.Header().Set("Content-Type", "application/json")
 
-    if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(r.FormValue("password"))) == nil {
+    if bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(user.Password)) == nil {
         token, err := user.GenerateJWT()
         if err != nil {
             w.WriteHeader(http.StatusUnauthorized)
@@ -251,7 +252,7 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
 
         json.NewEncoder(w).Encode(&token)
     } else {
-        fmt.Println("dang")
+        fmt.Println("here")
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
