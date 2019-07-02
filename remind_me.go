@@ -7,6 +7,7 @@ import (
     "log"
     "net/http"
     "os"
+    // "strings"
     "time"
 
     "golang.org/x/crypto/bcrypt"
@@ -41,7 +42,7 @@ type User struct {
     // ID        uint
     Username     string    `gorm:"username" json:"username"`
   	Email        string    `gorm:"email" json:"email"`
-    Digest       string    `json:"-"`
+    Password       string    `gorm:"password" json:"password"`
 }
 
 type Claims struct {
@@ -209,7 +210,11 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    user.Digest = HashPassword(r.FormValue("password"))
+    r.ParseForm()
+    fmt.Println(r.FormValue("password"))
+
+    bytes, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 4)
+    user.Password = string(bytes)
 
     err = db.Create(&user).Error
     if err != nil {
@@ -231,11 +236,13 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
 var Login = func(w http.ResponseWriter, r *http.Request) {
     var user User
 
+    r.ParseForm()
+
     db.Where("username = ?", r.FormValue("username")).Find(&user)
 
     w.Header().Set("Content-Type", "application/json")
 
-    if user.CheckPassword(r.FormValue("password")) {
+    if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(r.FormValue("password"))) == nil {
         token, err := user.GenerateJWT()
         if err != nil {
             w.WriteHeader(http.StatusUnauthorized)
@@ -244,20 +251,10 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
 
         json.NewEncoder(w).Encode(&token)
     } else {
+        fmt.Println("dang")
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
-}
-
-/*** user helpers ***/
-var HashPassword = func(password string) string {
-    bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 4)
-    return string(bytes)
-}
-
-func (user User) CheckPassword(password string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(user.Digest), []byte(password))
-    return err == nil
 }
 
 func (user User) GenerateJWT() (JWT, error) {
