@@ -1,13 +1,11 @@
 package main
 
 import (
-    // "context"
     "fmt"
     "encoding/json"
     "log"
     "net/http"
     "os"
-    // "strings"
     "time"
 
     "golang.org/x/crypto/bcrypt"
@@ -40,9 +38,9 @@ type User struct {
   	gorm.Model
 
     // ID        uint
-    Username     string    `gorm:"username" json:"username"`
+    Username     string    `gorm:"username;unique;not null" json:"username"`
   	Email        string    `gorm:"email" json:"email"`
-    Password       string    `gorm:"password" json:"password"`
+    Password     string    `gorm:"password" json:"password"`
 }
 
 type Claims struct {
@@ -215,6 +213,7 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
     err = db.Create(&user).Error
     if err != nil {
         w.WriteHeader(http.StatusUnauthorized)
+        return
     }
 
     token, err := user.GenerateJWT()
@@ -252,7 +251,6 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
 
         json.NewEncoder(w).Encode(&token)
     } else {
-        fmt.Println("here")
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
@@ -425,11 +423,11 @@ func initRouter() {
     // router.HandleFunc("/users/{user_id}/events/next", GetUserEventsNextWeek).Methods("GET")
 
     /*** signup ***/
-    // $ curl -X POST http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
+    // $ curl http://localhost:8000/signup -d '{"username":"bigbaddude","email":"fun@fun.fun","password":"goodstuff"}' -v
     router.HandleFunc("/signup", Signup).Methods("POST")
 
     /*** login ***/
-    // $ curl -X POST http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}' -v
+    // $ curl http://localhost:8000/login -d '{"username":"noob", "password":"geeeez"}' -v
     router.HandleFunc("/login", Login).Methods("POST")
 
     /******************************
