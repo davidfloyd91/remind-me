@@ -299,11 +299,13 @@ var JwtAuthentication = func(next http.Handler) http.Handler {
             return []byte(os.Getenv("JWT_SECRET")), nil
         })
 
-        id, err := strconv.ParseUint(params["user_id"], 10, 0)
+        if params["user_id"] != "" {
+            id, err := strconv.ParseUint(params["user_id"], 10, 0)
 
-        if id != uint64(tk.UserID) {
-            w.WriteHeader(http.StatusForbidden)
-            return
+            if err != nil || id != uint64(tk.UserID) {
+                w.WriteHeader(http.StatusForbidden)
+                return
+            }
         }
 
         if err != nil || !token.Valid {
