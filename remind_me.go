@@ -6,6 +6,7 @@ import (
     "log"
     "net/http"
     "os"
+    "strconv"
     "time"
 
     "golang.org/x/crypto/bcrypt"
@@ -276,6 +277,7 @@ func (user User) GenerateJWT() (JWT, error) {
 var JwtAuthentication = func(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         requestPath := r.URL.Path
+        params := mux.Vars(r)
 
         if requestPath == "/" || requestPath == "/signup" || requestPath == "/login" {
             next.ServeHTTP(w, r)
@@ -296,6 +298,13 @@ var JwtAuthentication = func(next http.Handler) http.Handler {
         token, err := jwt.ParseWithClaims(tokenHeader, tk, func(token *jwt.Token) (interface{}, error) {
             return []byte(os.Getenv("JWT_SECRET")), nil
         })
+
+        id, err := strconv.ParseUint(params["user_id"], 10, 0)
+
+        if id != uint64(tk.UserID) {
+            w.WriteHeader(http.StatusForbidden)
+            return
+        }
 
         if err != nil || !token.Valid {
             w.WriteHeader(http.StatusForbidden)
