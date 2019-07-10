@@ -18,8 +18,8 @@ import (
     _ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
 )
 
-/* ========================================================================== */
-/* ========================================================================== */
+/* ========================= */
+/* ========================= */
 
 /******************************
             models
@@ -28,7 +28,7 @@ import (
 type Event struct {
   	gorm.Model
 
-    // ID        uint      provided by gorm?
+    // ID        uint
     UserID       uint      `gorm:"user_id" json:"user_id"`
   	Name         string    `gorm:"name" json:"name"`
   	Description  string    `gorm:"description" json:"description"`
@@ -53,8 +53,8 @@ type JWT struct {
   	Token        string
 }
 
-/* ========================================================================== */
-/* ========================================================================== */
+/* ========================= */
+/* ========================= */
 
 var db *gorm.DB
 var err error
@@ -93,16 +93,15 @@ func main() {
     }
 
     fmt.Println("Successfully connected!")
-    /******************************
-               did that
-    ******************************/
 
-    /*** router time ***/
+    /******************************
+             router time
+    ******************************/
     initRouter()
 }
 
-/* ========================================================================== */
-/* ========================================================================== */
+/* ========================= */
+/* ========================= */
 
 /******************************
             handlers
@@ -114,7 +113,7 @@ var Home = func(w http.ResponseWriter, r *http.Request) {
 }
 
 /******************************
-             users
+            users
 ******************************/
 /*** index ***/
 var GetUsers = func(w http.ResponseWriter, r *http.Request) {
@@ -134,19 +133,15 @@ var UserEventsHelper = func(user_id string, timeframe string) []Event {
         db.Where("user_id = ?", user_id).Find(&events)
     /*** today ***/
     } else if timeframe == "today" {
-        // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '1d'", user_id).Find(&events)
     /*** tomorrow ***/
     } else if timeframe == "tomorrow" {
-        // test a lot more
         db.Where("user_id = ? and scheduled between now()::date + interval '1d' and now()::date + interval '2d'", user_id).Find(&events)
     /*** this week ***/
     } else if timeframe == "week" {
-        // test a lot more
         db.Where("user_id = ? and scheduled between now()::date and now()::date + interval '7d'", user_id).Find(&events)
-    /*** next week ***/ // doesn't work -- adds 7 days
-    // } else if timeframe == "next_week" {
-    //     // test a lot more
+    /*** next week ***/ // doesn't work yet -- just adds 7 days
+    // } else if timeframe == "next_week" {    //
     //     db.Where("user_id = ? and scheduled between now()::date + interval '1 week' and now()::date + interval '2 week'", user_id).Find(&events)
     }
 
@@ -228,8 +223,6 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
     }
 
     w.Header().Set("Content-Type", "application/json")
-    // json.NewEncoder(w).Encode(&user)
-
     json.NewEncoder(w).Encode(&token)
 }
 
@@ -397,8 +390,8 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(&event)
 }
 
-/* ========================================================================== */
-/* ========================================================================== */
+/* ========================= */
+/* ========================= */
 
 /******************************
             router
@@ -472,6 +465,7 @@ func initRouter() {
                 all done
     ******************************/
 
+    // jwt
     router.Use(JwtAuthentication)
 
     // cors config
@@ -482,7 +476,7 @@ func initRouter() {
         AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
     })
 
-    // use mux as middleware
+    // mux + jwt + cors
     handler := c.Handler(router)
 
     // start server
