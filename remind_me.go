@@ -382,7 +382,7 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
     var event Event
 
     // add error handling
-    db.First(&event, params["id"])
+    db.First(&event, params["event_id"])
     // add error handling
     db.Delete(&event)
 
@@ -459,8 +459,8 @@ func initRouter() {
     router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
-    // $ curl -H "Token: nicetrygithub" -X DELETE http://localhost:8000/events/10 -v
-    router.HandleFunc("/events/{id}", DeleteEvent).Methods("DELETE")
+    // $ curl -H "Token: nicetrygithub" -X DELETE http://localhost:8000/users/5/events/37 -v
+    router.HandleFunc("/users/{user_id}/events/{event_id}", DeleteEvent).Methods("DELETE")
     /******************************
                 all done
     ******************************/
@@ -472,6 +472,7 @@ func initRouter() {
     c := cors.New(cors.Options{
         AllowedOrigins: []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
         AllowCredentials: true,
+        AllowedMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
         // figure out which headers to allow
         AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
     })
