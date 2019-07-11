@@ -360,20 +360,25 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
 /*** update ***/
 var UpdateEvent = func(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-  	var event Event
+    event := &Event{}
+    updateEvent := &Event{}
 
-    // add error handling
-  	db.First(&event, params["id"])
-    r.ParseForm()
+    err = json.NewDecoder(r.Body).Decode(updateEvent)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
 
-    // add error handling
+    db.First(&event, params["event_id"])
+
     db.Model(&event).Updates(Event{
-      Name: r.FormValue("name"),
-      Description: r.FormValue("description"),
+      Name: updateEvent.Name,
+      Description: updateEvent.Description,
+      Scheduled: updateEvent.Scheduled,
     })
 
     w.Header().Set("Content-Type", "application/json")
-  	json.NewEncoder(w).Encode(&event)
+    json.NewEncoder(w).Encode(updateEvent)
 }
 
 /*** delete ***/
@@ -456,7 +461,7 @@ func initRouter() {
 
     /*** update ***/
     // $ curl -X PUT -H "Token: nicetrygithub" http://localhost:8000/events/4 -d description=hemisemidope -d name=i%20suppose -v
-    router.HandleFunc("/events/{id}", UpdateEvent).Methods("PUT")
+    router.HandleFunc("/users/{user_id}/events/{event_id}", UpdateEvent).Methods("PUT")
 
     /*** delete ***/
     // $ curl -H "Token: nicetrygithub" -X DELETE http://localhost:8000/users/5/events/37 -v
