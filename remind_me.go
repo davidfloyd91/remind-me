@@ -21,7 +21,6 @@ import (
 type Event struct {
 	gorm.Model
 
-	// ID        uint
 	UserID      uint      `gorm:"user_id" json:"user_id"`
 	Name        string    `gorm:"name" json:"name"`
 	Description string    `gorm:"description" json:"description"`
@@ -31,7 +30,6 @@ type Event struct {
 type User struct {
 	gorm.Model
 
-	// ID        uint
 	Username string `gorm:"username;unique;not null" json:"username"`
 	Email    string `gorm:"email" json:"email"`
 	Password string `gorm:"password" json:"password"`
@@ -146,7 +144,6 @@ var GetUserEventsThisWeek = func(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&events)
 }
 
-//
 // var GetUserEventsNextWeek = func(w http.ResponseWriter, r *http.Request) {
 //     params := mux.Vars(r)
 //     events := UserEventsHelper(params["user_id"], "next_week")
@@ -275,7 +272,6 @@ var JwtAuthentication = func(next http.Handler) http.Handler {
 var GetEvents = func(w http.ResponseWriter, r *http.Request) {
 	var events []Event
 
-	// add error handling
 	db.Find(&events)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -286,7 +282,6 @@ var GetEvent = func(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var event Event
 
-	// add error handling
 	db.First(&event, params["id"])
 
 	w.Header().Set("Content-Type", "application/json")
@@ -302,7 +297,6 @@ var CreateEvent = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// add error handling
 	db.Create(&event)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -336,9 +330,7 @@ var DeleteEvent = func(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var event Event
 
-	// add error handling
 	db.First(&event, params["event_id"])
-	// add error handling
 	db.Delete(&event)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -391,21 +383,17 @@ func initRouter() {
 	// $ curl -H "Token: nicetrygithub" -X DELETE http://localhost:8000/users/5/events/37 -v
 	router.HandleFunc("/users/{user_id}/events/{event_id}", DeleteEvent).Methods("DELETE")
 
-	// jwt
+
 	router.Use(JwtAuthentication)
 
-	// cors config
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		// figure out which headers to allow
 		AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
 	})
 
-	// mux + jwt + cors
 	handler := c.Handler(router)
 
-	// start server
 	log.Fatal(http.ListenAndServe(":8000", handler))
 }
