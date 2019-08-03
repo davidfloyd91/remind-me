@@ -4,10 +4,8 @@ import (
   "database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-  // "net/url"
   "strings"
 	"time"
 
@@ -25,19 +23,21 @@ func Start() {
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
+// $ curl http://localhost:8000/ -v
 var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-	io.WriteString(w, "Hello, World!\n")
+  w.Header().Set("Content-Type", "application/json")
+  json.NewEncoder(w).Encode("Hello, World!")
 })
 
 var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  var users []types.User
+  var rows *sql.Rows
+
 	switch r.Method {
-	// $ curl http://localhost:8000/users/
 	case "GET":
     paramId := strings.Split(r.URL.String(), "/")[2]
-    var users []types.User
-    var rows *sql.Rows
 
-    // no user id param
+    // $ curl http://localhost:8000/users/ -v
     if paramId == "" {
   		query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
@@ -50,7 +50,7 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   			panic(err)
   		}
 
-    // user id param provided
+    // $ curl http://localhost:8000/users/3 -v
     } else {
       query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
@@ -65,29 +65,6 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   		}
     }
 
-    for rows.Next() {
-			var Id uint
-			var Username string
-			var Email string
-			var CreatedAt time.Time
-			var UpdatedAt time.Time
-			var DeletedAt time.Time
-
-			rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
-
-			users = append(users, types.User{
-				Id:        Id,
-				Username:  Username,
-				Email:     Email,
-				CreatedAt: CreatedAt,
-				UpdatedAt: UpdatedAt,
-				DeletedAt: DeletedAt,
-			})
-		}
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(users)
-
 	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
 		user := &types.User{}
@@ -97,30 +74,39 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
-		var Id uint
-		var Username string
-		var Email string
-		var CreatedAt time.Time
-
+    // passwords are not being hashed -- must fix
 		query := `
         INSERT INTO users (username, email, password)
         VALUES ($1, $2, $3)
-        RETURNING id, username, email, created_at
+        RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-		err = db.DB.QueryRow(query, user.Username, user.Email, user.Password).Scan(&Id, &Username, &Email, &CreatedAt)
+		rows, err = db.DB.Query(query, user.Username, user.Email, user.Password)
 		if err != nil {
 			panic(err)
 		}
-
-		returnUser := types.User{
-			Id:        Id,
-			Username:  Username,
-			Email:     Email,
-			CreatedAt: CreatedAt,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(returnUser)
 	}
+
+  for rows.Next() {
+    var Id uint
+    var Username string
+    var Email string
+    var CreatedAt time.Time
+    var UpdatedAt time.Time
+    var DeletedAt time.Time
+
+    rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
+
+    users = append(users, types.User{
+      Id:        Id,
+      Username:  Username,
+      Email:     Email,
+      CreatedAt: CreatedAt,
+      UpdatedAt: UpdatedAt,
+      DeletedAt: DeletedAt,
+    })
+  }
+
+  w.Header().Set("Content-Type", "application/json")
+  json.NewEncoder(w).Encode(users)
 })
