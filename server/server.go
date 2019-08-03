@@ -1,11 +1,14 @@
 package server
 
 import (
+  "database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+  // "net/url"
+  "strings"
 	"time"
 
 	"github.com/davidfloyd91/remind-me/db"
@@ -30,41 +33,60 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	// $ curl http://localhost:8000/users/
 	case "GET":
-		var users []types.User
+    paramId := strings.Split(r.URL.String(), "/")[2]
+    var users []types.User
+    var rows *sql.Rows
 
-		query := `
-        SELECT * FROM users
-      `
+    // no user id param
+    if paramId == "" {
+  		query := `
+          SELECT id, username, email, created_at, updated_at, deleted_at
+          FROM users
+        `
 
-		rows, err := db.DB.Query(query)
-		if err != nil {
-			panic(err)
-		}
+      var err error
+  		rows, err = db.DB.Query(query)
+  		if err != nil {
+  			panic(err)
+  		}
 
-		for rows.Next() {
+    // user id param provided
+    } else {
+      query := `
+          SELECT id, username, email, created_at, updated_at, deleted_at
+          FROM users
+          WHERE id = $1
+        `
+
+      var err error
+      rows, err = db.DB.Query(query, paramId)
+      if err != nil {
+  			panic(err)
+  		}
+    }
+
+    for rows.Next() {
 			var Id uint
 			var Username string
 			var Email string
-			var Password string
 			var CreatedAt time.Time
 			var UpdatedAt time.Time
 			var DeletedAt time.Time
 
-			rows.Scan(&Id, &Username, &Email, &Password, &CreatedAt, &UpdatedAt, &DeletedAt)
+			rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
 
 			users = append(users, types.User{
 				Id:        Id,
 				Username:  Username,
 				Email:     Email,
-				Password:  Password,
 				CreatedAt: CreatedAt,
 				UpdatedAt: UpdatedAt,
 				DeletedAt: DeletedAt,
 			})
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(users)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(users)
 
 	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
