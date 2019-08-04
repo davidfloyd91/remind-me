@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+  // "fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// $ curl http://localhost:8000/users/ -v
+		// $ curl http://localhost:8000/users/ -v | json_pp
 		if paramId == "" {
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
@@ -34,9 +35,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				panic(err)
 			}
-
-			// $ curl http://localhost:8000/users/3 -v
 		} else {
+      // $ curl http://localhost:8000/users/3 -v | json_pp
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
           FROM users
@@ -50,23 +50,24 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
+	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v | json_pp
 	case "POST":
 		user := &types.User{}
 
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+      return
 		}
 
 		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+      return
 		}
 
 		digest := string(bytes)
 
-		// passwords are not being hashed -- must fix
 		query := `
         INSERT INTO users (username, email, password)
         VALUES ($1, $2, $3)
@@ -78,10 +79,11 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v
+	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v | json_pp
 	case "PATCH":
 		// add error handling
 		if paramId == "" {
+      w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -90,11 +92,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+      return
 		}
 
 		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+      return
 		}
 
 		digest := string(bytes)
@@ -110,14 +114,16 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(digest), paramId)
 		if err != nil {
-			panic(err)
+      w.WriteHeader(http.StatusInternalServerError)
+      return
 		}
 
 	// nothing is keeping us from seeing deleted users so far
-	// curl -X DELETE http://localhost:8000/users/2 -v
+	// curl -X DELETE http://localhost:8000/users/2 -v | json_pp
 	case "DELETE":
 		// add error handling
 		if paramId == "" {
+      w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -131,7 +137,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		rows, err = db.DB.Query(query, paramId)
 		if err != nil {
-			panic(err)
+      w.WriteHeader(http.StatusInternalServerError)
+      return
 		}
 	} // close switch
 
@@ -145,14 +152,28 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
 
-		users = append(users, types.User{
-			Id:        Id,
-			Username:  Username,
-			Email:     Email,
-			CreatedAt: CreatedAt,
-			UpdatedAt: UpdatedAt,
-			DeletedAt: DeletedAt,
-		})
+    // only append row if it has not been deleted
+    // or the action was deletion
+    if !newNullTime(DeletedAt).Valid  {
+      users = append(users, types.User{
+        Id:        Id,
+        Username:  Username,
+        Email:     Email,
+        CreatedAt: CreatedAt,
+        UpdatedAt: UpdatedAt,
+      })
+    }
+
+    if r.Method == "DELETE" {
+      users = append(users, types.User{
+        Id:        Id,
+        Username:  Username,
+        Email:     Email,
+        CreatedAt: CreatedAt,
+        UpdatedAt: UpdatedAt,
+        DeletedAt: DeletedAt,
+      })
+    }
 	}
 
 	w.Header().Set("Content-Type", "application/json")

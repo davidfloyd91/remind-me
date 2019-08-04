@@ -1,12 +1,42 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
+
+type NullString struct {
+  String string
+  Valid  bool // Valid is true if String is not NULL
+}
+
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
+func newNullString(s string) NullString {
+	if len(s) == 0 {
+		return NullString{}
+	}
+	return NullString{
+		String: s,
+		Valid:  true,
+	}
+}
+
+func newNullTime(t time.Time) NullTime {
+	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
+		return NullTime{}
+	}
+	return NullTime{
+		Time: t,
+		Valid: true,
+	}
+}
 
 const port = ":8000"
 
@@ -18,18 +48,7 @@ func Start() {
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
-// https://stackoverflow.com/questions/40266633/golang-insert-null-into-sql-instead-of-empty-string
-func newNullString(s string) sql.NullString {
-	if len(s) == 0 {
-		return sql.NullString{}
-	}
-	return sql.NullString{
-		String: s,
-		Valid:  true,
-	}
-}
-
-// $ curl http://localhost:8000/ -v
+// $ curl http://localhost:8000/ -v | json_pp
 var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode("Hello, World!")
