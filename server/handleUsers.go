@@ -53,7 +53,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
+	// $ curl http://localhost:8000/signup/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
 		user := &types.User{}
 
@@ -171,53 +171,53 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 // $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar"}' -v
 var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-  var users []types.User
-  user := &types.User{}
+	var users []types.User
+	user := &types.User{}
 
-  err := json.NewDecoder(r.Body).Decode(user)
-  if err != nil {
-    w.WriteHeader(http.StatusBadRequest)
-    return
-  }
+	err := json.NewDecoder(r.Body).Decode(user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-  query := `
+	query := `
     SELECT id, password
     FROM users
     WHERE username = $1
     AND deleted_at IS NULL
   `
 
-  rows, err := db.DB.Query(query, user.Username)
-  if err != nil {
-    panic(err)
-    w.WriteHeader(http.StatusInternalServerError)
-    return
-  }
+	rows, err := db.DB.Query(query, user.Username)
+	if err != nil {
+		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-  for rows.Next() {
-    var Id uint
-    var Password string
+	for rows.Next() {
+		var Id uint
+		var Password string
 
-    rows.Scan(&Id, &Password)
+		rows.Scan(&Id, &Password)
 
-    users = append(users, types.User{
-      Id:        Id,
-      Password:  Password,
-    })
-  }
+		users = append(users, types.User{
+			Id:       Id,
+			Password: Password,
+		})
+	}
 
-  w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
-  err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
-  if err == nil {
-        token, err := users[0].GenerateJWT()
-        if err != nil {
-            w.WriteHeader(http.StatusUnauthorized)
-            return
-        }
-        json.NewEncoder(w).Encode(&token)
-    } else {
-        w.WriteHeader(http.StatusUnauthorized)
-        return
-    }
+	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
+	if err == nil {
+		token, err := users[0].GenerateJwt()
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		json.NewEncoder(w).Encode(&token)
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 }) // close Login

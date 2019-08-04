@@ -39,6 +39,7 @@ const port = ":8000"
 func Start() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/users/", Users)
+	http.HandleFunc("/signup/", Users)
 	http.HandleFunc("/login/", Login)
 
 	fmt.Println("Listening at http://localhost" + port)
