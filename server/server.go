@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,21 +9,16 @@ import (
 	"time"
 )
 
-type NullString struct {
-  String string
-  Valid  bool // Valid is true if String is not NULL
-}
-
 type NullTime struct {
 	Time  time.Time
 	Valid bool // Valid is true if Time is not NULL
 }
 
-func newNullString(s string) NullString {
+func newNullString(s string) sql.NullString {
 	if len(s) == 0 {
-		return NullString{}
+		return sql.NullString{}
 	}
-	return NullString{
+	return sql.NullString{
 		String: s,
 		Valid:  true,
 	}
@@ -43,12 +39,13 @@ const port = ":8000"
 func Start() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/users/", Users)
+	http.HandleFunc("/login/", Login)
 
 	fmt.Println("Listening at http://localhost" + port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
-// $ curl http://localhost:8000/ -v | json_pp
+// $ curl http://localhost:8000/ -v | json_pp --json_opt=canonical,pretty
 var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode("Hello, World!")

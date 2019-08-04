@@ -1,7 +1,7 @@
 CREATE TABLE users(
   id SERIAL PRIMARY KEY,
-  username VARCHAR(50) NOT NULL,
-  email VARCHAR(200),
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(200) UNIQUE,
   password char(60),
   created_at TIMESTAMPTZ DEFAULT current_timestamp,
   updated_at TIMESTAMPTZ,

@@ -18,16 +18,17 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var users []types.User
 	var rows *sql.Rows
 
-	// definitely a better method in net/url
 	paramId := strings.Split(r.URL.String(), "/")[2]
 
 	switch r.Method {
 	case "GET":
-		// $ curl http://localhost:8000/users/ -v | json_pp
+		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
 		if paramId == "" {
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
           FROM users
+          WHERE deleted_at IS NULL
+          ORDER BY id
         `
 
 			var err error
@@ -36,11 +37,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				panic(err)
 			}
 		} else {
-      // $ curl http://localhost:8000/users/3 -v | json_pp
+      // $ curl http://localhost:8000/users/1 -v
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
           FROM users
           WHERE id = $1
+          AND deleted_at IS NULL
+          ORDER BY id
         `
 
 			var err error
@@ -50,7 +53,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v | json_pp
+	// $ curl http://localhost:8000/users/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
 		user := &types.User{}
 
@@ -76,12 +79,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, user.Username, user.Email, digest)
 		if err != nil {
-			panic(err)
+      // handle conflict error here
+      w.WriteHeader(http.StatusBadRequest)
+      return
 		}
 
-	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v | json_pp
+	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v
 	case "PATCH":
-		// add error handling
 		if paramId == "" {
       w.WriteHeader(http.StatusBadRequest)
 			return
@@ -119,9 +123,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		}
 
 	// nothing is keeping us from seeing deleted users so far
-	// curl -X DELETE http://localhost:8000/users/2 -v | json_pp
+	// curl -X DELETE http://localhost:8000/users/2 -v
 	case "DELETE":
-		// add error handling
 		if paramId == "" {
       w.WriteHeader(http.StatusBadRequest)
 			return
@@ -152,30 +155,20 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
 
-    // only append row if it has not been deleted
-    // or the action was deletion
-    if !newNullTime(DeletedAt).Valid  {
-      users = append(users, types.User{
-        Id:        Id,
-        Username:  Username,
-        Email:     Email,
-        CreatedAt: CreatedAt,
-        UpdatedAt: UpdatedAt,
-      })
-    }
-
-    if r.Method == "DELETE" {
-      users = append(users, types.User{
-        Id:        Id,
-        Username:  Username,
-        Email:     Email,
-        CreatedAt: CreatedAt,
-        UpdatedAt: UpdatedAt,
-        DeletedAt: DeletedAt,
-      })
-    }
+    users = append(users, types.User{
+      Id:        Id,
+      Username:  Username,
+      Email:     Email,
+      CreatedAt: CreatedAt,
+      UpdatedAt: UpdatedAt,
+      DeletedAt: DeletedAt,
+    })
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+})
+
+var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 })
