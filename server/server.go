@@ -19,7 +19,7 @@ func newNullTime(t time.Time) NullTime {
 		return NullTime{}
 	}
 	return NullTime{
-		Time: t,
+		Time:  t,
 		Valid: true,
 	}
 }
@@ -45,7 +45,7 @@ func Start() {
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
-// $ curl http://localhost:8000/ -v | json_pp --json_opt=canonical,pretty
+// $ curl http://localhost:8000/ -v
 var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode("Hello, World!")

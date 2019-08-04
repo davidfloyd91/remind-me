@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-  // "fmt"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -37,7 +37,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				panic(err)
 			}
 		} else {
-      // $ curl http://localhost:8000/users/1 -v
+			// $ curl http://localhost:8000/users/1 -v
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
           FROM users
@@ -60,13 +60,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-      return
+			return
 		}
 
 		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-      return
+			return
 		}
 
 		digest := string(bytes)
@@ -79,15 +79,15 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, user.Username, user.Email, digest)
 		if err != nil {
-      // handle conflict error here
-      w.WriteHeader(http.StatusBadRequest)
-      return
+			// handle conflict error here
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v
 	case "PATCH":
 		if paramId == "" {
-      w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -96,13 +96,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-      return
+			return
 		}
 
 		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-      return
+			return
 		}
 
 		digest := string(bytes)
@@ -119,14 +119,14 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(digest), paramId)
 		if err != nil {
-      w.WriteHeader(http.StatusInternalServerError)
-      return
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 	// curl -X DELETE http://localhost:8000/users/2 -v
 	case "DELETE":
 		if paramId == "" {
-      w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -140,8 +140,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		rows, err = db.DB.Query(query, paramId)
 		if err != nil {
-      w.WriteHeader(http.StatusInternalServerError)
-      return
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	} // close switch
 
@@ -155,19 +155,74 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows.Scan(&Id, &Username, &Email, &CreatedAt, &UpdatedAt, &DeletedAt)
 
-    users = append(users, types.User{
-      Id:        Id,
-      Username:  Username,
-      Email:     Email,
-      CreatedAt: CreatedAt,
-      UpdatedAt: UpdatedAt,
-      DeletedAt: DeletedAt,
-    })
+		users = append(users, types.User{
+			Id:        Id,
+			Username:  Username,
+			Email:     Email,
+			CreatedAt: CreatedAt,
+			UpdatedAt: UpdatedAt,
+			DeletedAt: DeletedAt,
+		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }) // close Users
 
+// $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar"}' -v
 var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  var users []types.User
+  user := &types.User{}
+
+  err := json.NewDecoder(r.Body).Decode(user)
+  if err != nil {
+    w.WriteHeader(http.StatusBadRequest)
+    return
+  }
+
+  query := `
+    SELECT id, password
+    FROM users
+    WHERE username = $1
+    AND deleted_at IS NULL
+  `
+
+  rows, err := db.DB.Query(query, user.Username)
+  if err != nil {
+    panic(err)
+    w.WriteHeader(http.StatusInternalServerError)
+    return
+  }
+
+  for rows.Next() {
+    var Id uint
+    var Password string
+
+    rows.Scan(&Id, &Password)
+
+    users = append(users, types.User{
+      Id:        Id,
+      Password:  Password,
+    })
+  }
+
+  w.Header().Set("Content-Type", "application/json")
+
+  err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
+  if err == nil {
+        // token, err := storedUser.GenerateJWT()
+        // if err != nil {
+        //     w.WriteHeader(http.StatusUnauthorized)
+        //     return
+        // }
+
+        fmt.Println("good job dave")
+
+        // json.NewEncoder(w).Encode(&token)
+    } else {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+
+  // json.NewEncoder(w).Encode(users)
 })
