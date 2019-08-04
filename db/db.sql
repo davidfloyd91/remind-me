@@ -1,21 +1,32 @@
-create table users(
-  id serial primary key,
-  username varchar(50) not null,
-  email varchar(200),
+CREATE TABLE users(
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  email VARCHAR(200),
   password char(60),
-  created_at timestamptz default current_timestamp,
-  updated_at timestamptz,
-  deleted_at timestamptz
+  created_at TIMESTAMPTZ DEFAULT current_timestamp,
+  updated_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ
 );
 
-create table events(
-  id serial primary key,
-  user_id int not null,
-  foreign key (user_id) references users (id),
-  name varchar(200) not null,
-  description varchar(500),
-  scheduled timestamptz not null,
-  created_at timestamptz default current_timestamp,
-  updated_at timestamptz,
-  deleted_at timestamptz
+CREATE TABLE events(
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (id),
+  name VARCHAR(200) NOT NULL,
+  description VARCHAR(500),
+  scheduled TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT current_timestamp,
+  updated_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ
 );
+
+CREATE OR REPLACE FUNCTION updated_at_column() RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = current_timestamp;
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER users_updated_at_column
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE PROCEDURE updated_at_column();

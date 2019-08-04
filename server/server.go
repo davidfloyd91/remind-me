@@ -18,6 +18,7 @@ const port = ":8000"
 func Start() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/users/", users)
+  // http.HandleFunc("/events/", events)
 
 	fmt.Println("Listening at http://localhost" + port)
 	log.Fatal(http.ListenAndServe(port, nil))
@@ -32,11 +33,10 @@ var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   var users []types.User
   var rows *sql.Rows
+  paramId := strings.Split(r.URL.String(), "/")[2]
 
 	switch r.Method {
 	case "GET":
-    paramId := strings.Split(r.URL.String(), "/")[2]
-
     // $ curl http://localhost:8000/users/ -v
     if paramId == "" {
   		query := `
@@ -85,7 +85,59 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-	}
+
+    // curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Flipflap"}' -v
+  case "PATCH":
+    if paramId == "" {
+      return
+    }
+
+    user := &types.User{}
+
+    err := json.NewDecoder(r.Body).Decode(user)
+    if err != nil {
+      w.WriteHeader(http.StatusBadRequest)
+    }
+
+    query := `
+        UPDATE users SET
+          username = COALESCE($1, username),
+          email = COALESCE($2, email),
+          password = COALESCE($3, password)
+        WHERE id = $4
+        RETURNING id, username, email, created_at, updated_at, deleted_at
+      `
+
+    // there
+    var values []interface{}
+
+    // has
+    if user.Username == "" {
+      values = append(values, nil)
+    } else {
+      values = append(values, user.Username)
+    }
+
+    // to be
+    if user.Email == "" {
+      values = append(values, nil)
+    } else {
+      values = append(values, user.Email)
+    }
+
+    // a better
+    if user.Password == "" {
+      values = append(values, nil)
+    } else {
+      values = append(values, user.Password)
+    }
+
+    // way
+    rows, err = db.DB.Query(query, values[0], values[1], values[2], paramId)
+    if err != nil {
+      panic(err)
+    }
+	} // close switch
 
   for rows.Next() {
     var Id uint
@@ -109,4 +161,4 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
   w.Header().Set("Content-Type", "application/json")
   json.NewEncoder(w).Encode(users)
-})
+}) // close users
