@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -210,19 +210,14 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
   err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
   if err == nil {
-        // token, err := storedUser.GenerateJWT()
-        // if err != nil {
-        //     w.WriteHeader(http.StatusUnauthorized)
-        //     return
-        // }
-
-        fmt.Println("good job dave")
-
-        // json.NewEncoder(w).Encode(&token)
+        token, err := users[0].GenerateJWT()
+        if err != nil {
+            w.WriteHeader(http.StatusUnauthorized)
+            return
+        }
+        json.NewEncoder(w).Encode(&token)
     } else {
         w.WriteHeader(http.StatusUnauthorized)
         return
     }
-
-  // json.NewEncoder(w).Encode(users)
-})
+}) // close Login
