@@ -1,14 +1,16 @@
 package server
 
 import (
-  "database/sql"
-  "encoding/json"
-  "net/http"
-  "strings"
-  "time"
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
 
-  "github.com/davidfloyd91/remind-me/db"
-  "github.com/davidfloyd91/remind-me/types"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/davidfloyd91/remind-me/db"
+	"github.com/davidfloyd91/remind-me/types"
 )
 
 var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +59,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
+		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		digest := string(bytes)
+
 		// passwords are not being hashed -- must fix
 		query := `
         INSERT INTO users (username, email, password)
@@ -64,13 +73,14 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-		rows, err = db.DB.Query(query, user.Username, user.Email, user.Password)
+		rows, err = db.DB.Query(query, user.Username, user.Email, digest)
 		if err != nil {
 			panic(err)
 		}
 
 	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v
 	case "PATCH":
+		// add error handling
 		if paramId == "" {
 			return
 		}
@@ -82,6 +92,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
+		bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		digest := string(bytes)
+
 		query := `
         UPDATE users SET
           username = COALESCE($1, username),
@@ -91,14 +108,15 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(user.Password), paramId)
+		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(digest), paramId)
 		if err != nil {
 			panic(err)
 		}
 
-		// nothing is keeping us from seeing deleted users so far
+	// nothing is keeping us from seeing deleted users so far
 	// curl -X DELETE http://localhost:8000/users/2 -v
 	case "DELETE":
+		// add error handling
 		if paramId == "" {
 			return
 		}
@@ -139,4 +157,4 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
-}) // close users
+})
