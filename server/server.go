@@ -14,16 +14,6 @@ type NullTime struct {
 	Valid bool // Valid is true if Time is not NULL
 }
 
-func newNullString(s string) sql.NullString {
-	if len(s) == 0 {
-		return sql.NullString{}
-	}
-	return sql.NullString{
-		String: s,
-		Valid:  true,
-	}
-}
-
 func newNullTime(t time.Time) NullTime {
 	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
 		return NullTime{}
@@ -31,6 +21,16 @@ func newNullTime(t time.Time) NullTime {
 	return NullTime{
 		Time: t,
 		Valid: true,
+	}
+}
+
+func newNullString(s string) sql.NullString {
+	if len(s) == 0 {
+		return sql.NullString{}
+	}
+	return sql.NullString{
+		String: s,
+		Valid:  true,
 	}
 }
 

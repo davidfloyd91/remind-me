@@ -111,7 +111,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         UPDATE users SET
           username = COALESCE($1, username),
           email = COALESCE($2, email),
-          password = COALESCE($3, password)
+          password = COALESCE($3, password),
+          updated_at = current_timestamp
         WHERE id = $4
         RETURNING id, username, email, created_at, updated_at, deleted_at
       `
@@ -122,7 +123,6 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
       return
 		}
 
-	// nothing is keeping us from seeing deleted users so far
 	// curl -X DELETE http://localhost:8000/users/2 -v
 	case "DELETE":
 		if paramId == "" {
@@ -167,8 +167,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
-})
+}) // close Users
 
 var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 })

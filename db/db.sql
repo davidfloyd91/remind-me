@@ -19,14 +19,3 @@ CREATE TABLE events(
   updated_at TIMESTAMPTZ,
   deleted_at TIMESTAMPTZ
 );
-
-CREATE OR REPLACE FUNCTION updated_at_column() RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = current_timestamp;
-  RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER users_updated_at_column
-BEFORE UPDATE ON users
-FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
