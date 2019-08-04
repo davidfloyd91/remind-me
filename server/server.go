@@ -18,10 +18,20 @@ const port = ":8000"
 func Start() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/users/", users)
-  // http.HandleFunc("/events/", events)
 
 	fmt.Println("Listening at http://localhost" + port)
 	log.Fatal(http.ListenAndServe(port, nil))
+}
+
+// https://stackoverflow.com/questions/40266633/golang-insert-null-into-sql-instead-of-empty-string
+func newNullString(s string) sql.NullString {
+    if len(s) == 0 {
+        return sql.NullString{}
+    }
+    return sql.NullString{
+         String: s,
+         Valid: true,
+    }
 }
 
 // $ curl http://localhost:8000/ -v
@@ -33,6 +43,8 @@ var root = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   var users []types.User
   var rows *sql.Rows
+
+  // definitely a better method in net/url
   paramId := strings.Split(r.URL.String(), "/")[2]
 
 	switch r.Method {
@@ -86,7 +98,7 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-    // curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Flipflap"}' -v
+  // curl -X PATCH http://localhost:8000/users/1 -d '{"Password":"Superhilar"}' -v
   case "PATCH":
     if paramId == "" {
       return
@@ -108,32 +120,7 @@ var users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-    // there
-    var values []interface{}
-
-    // has
-    if user.Username == "" {
-      values = append(values, nil)
-    } else {
-      values = append(values, user.Username)
-    }
-
-    // to be
-    if user.Email == "" {
-      values = append(values, nil)
-    } else {
-      values = append(values, user.Email)
-    }
-
-    // a better
-    if user.Password == "" {
-      values = append(values, nil)
-    } else {
-      values = append(values, user.Password)
-    }
-
-    // way
-    rows, err = db.DB.Query(query, values[0], values[1], values[2], paramId)
+    rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(user.Password), paramId)
     if err != nil {
       panic(err)
     }
