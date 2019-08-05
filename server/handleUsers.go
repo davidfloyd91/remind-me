@@ -22,6 +22,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	pathSplit := strings.Split(requestPath, "/")
 	paramId := pathSplit[2]
 
+	// for /users/:user_id/events/:event_id
+	// send to server/handleEvents.go
 	if len(pathSplit) > 3 {
 		if pathSplit[3] == "events" {
 			Events(w, r)
@@ -31,6 +33,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
+		// need to protect this endpoint -- admin in claims?
+		
 		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
 		if paramId == "" {
 			query := `

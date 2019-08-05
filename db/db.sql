@@ -3,9 +3,9 @@ CREATE TABLE users(
   username VARCHAR(50) NOT NULL UNIQUE,
   email VARCHAR(200) UNIQUE,
   password char(60),
-  created_at TIMESTAMPTZ DEFAULT current_timestamp,
-  updated_at TIMESTAMPTZ,
-  deleted_at TIMESTAMPTZ
+  created_at TIMESTAMP DEFAULT current_timestamp,
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMP
 );
 
 CREATE TABLE events(
@@ -14,8 +14,8 @@ CREATE TABLE events(
   FOREIGN KEY (user_id) REFERENCES users (id),
   name VARCHAR(200) NOT NULL,
   description VARCHAR(500),
-  scheduled TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT current_timestamp,
-  updated_at TIMESTAMPTZ,
-  deleted_at TIMESTAMPTZ
+  scheduled TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT current_timestamp,
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMP
 );

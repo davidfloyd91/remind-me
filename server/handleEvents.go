@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+  "fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,9 +12,8 @@ import (
 	"github.com/davidfloyd91/remind-me/types"
 )
 
+// Scheduled is GMT-5, not -4 like everything else???
 var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(time.Now())
-
 	var events []types.Event
 	var rows *sql.Rows
 
@@ -39,7 +38,7 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-	// $ curl http://localhost:8000/users/6/events/ -H "Token: lol" -d '{"Name":"yup yeah absolutely", "Description":"hrrrm", "Scheduled":"1908-01-02T03:04:05-05:00"}' -v
+	// $ curl http://localhost:8000/users/6/events/ -H "Token: lol" -d '{"Name":"yup yeah absolutely", "Description":"hrrrm", "Scheduled":"1908-01-02T03:04:05Z"}' -v
 	case "POST":
 		event := &types.Event{}
 
@@ -54,6 +53,8 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
+    fmt.Println(scheduled)
+
 		query := `
           INSERT INTO events (user_id, name, description, scheduled)
           VALUES ($1, $2, $3, $4)
@@ -66,9 +67,7 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Scheduled is GMT-5, not -4 like everything else???
-
-		// $ curl -X PATCH http://localhost:8000/users/6/events/5 -H "Token: lol" -d '{"Scheduled":"2087-01-02T15:04:05+02:00"}' -v
+  // $ curl -X PATCH http://localhost:8000/users/6/events/5 -H "Token: lol" -d '{"Scheduled":"2087-01-02T15:04:05+02:00"}' -v
 	case "PATCH":
 		if paramEventId == "" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -105,26 +104,26 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// curl -X DELETE http://localhost:8000/users/2 -v
-		// case "DELETE":
-		// 	if paramUserId == "" {
-		// 		w.WriteHeader(http.StatusBadRequest)
-		// 		return
-		// 	}
-		//
-		// 	query := `
-		//       UPDATE users SET
-		//         deleted_at = current_timestamp
-		//       WHERE id = $1
-		//       RETURNING id, username, email, created_at, updated_at, deleted_at
-		//     `
-		//
-		// 	var err error
-		// 	rows, err = db.DB.Query(query, paramUserId)
-		// 	if err != nil {
-		// 		w.WriteHeader(http.StatusInternalServerError)
-		// 		return
-		// 	}
+		// curl -X DELETE http://localhost:8000/users/6/events/8 -H "Token: lol" -v
+		case "DELETE":
+			if paramEventId == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			query := `
+		      UPDATE events SET
+		        deleted_at = current_timestamp
+		      WHERE id = $1
+		      RETURNING id, user_id, name, description, scheduled, created_at, updated_at, deleted_at
+		    `
+
+			var err error
+			rows, err = db.DB.Query(query, paramEventId)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 	} // close switch
 
 	for rows.Next() {
