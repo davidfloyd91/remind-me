@@ -36,11 +36,12 @@ func newNullString(s string) sql.NullString {
 
 const port = ":8000"
 
+// this I guess: https://medium.com/@matryer/writing-middleware-in-golang-and-how-go-makes-it-so-much-fun-4375c1246e81
 func Start() {
-	http.HandleFunc("/", root)
-	http.HandleFunc("/users/", Users)
-	http.HandleFunc("/signup/", Users)
-	http.HandleFunc("/login/", Login)
+	http.Handle("/", root)
+	http.Handle("/users/", jwtAuthentication(Users))
+	http.Handle("/signup/", Users)
+	http.Handle("/login/", Login)
 
 	fmt.Println("Listening at http://localhost" + port)
 	log.Fatal(http.ListenAndServe(port, nil))

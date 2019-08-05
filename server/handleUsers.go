@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	// "fmt"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -18,7 +18,8 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var users []types.User
 	var rows *sql.Rows
 
-	paramId := strings.Split(r.URL.String(), "/")[2]
+	requestPath := r.URL.Path
+	paramId := strings.Split(requestPath, "/")[2]
 
 	switch r.Method {
 	case "GET":
@@ -84,9 +85,10 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	// curl -X PATCH http://localhost:8000/users/1 -d '{"Username":"Egh","Password":"Superhilar"}' -v
+	// curl -X PATCH http://localhost:8000/users/5 -H "Token: lol" -d '{ "Email":"jaljdlkjadfj.email.email"}' -v
 	case "PATCH":
 		if paramId == "" {
+			fmt.Println("here")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -95,6 +97,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
+			panic(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -119,6 +122,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(digest), paramId)
 		if err != nil {
+			// duplicate username fails silently here
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -189,7 +193,6 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.DB.Query(query, user.Username)
 	if err != nil {
-		panic(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -207,6 +210,12 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	if len(users) == 0 {
+		// right error code?
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
 	if err == nil {
