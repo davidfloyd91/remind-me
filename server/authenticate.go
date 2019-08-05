@@ -12,7 +12,6 @@ import (
   "github.com/davidfloyd91/remind-me/types"
 )
 
-// $ curl -X PATCH http://localhost:8000/users/5 -d '{"Token":"lol", "Email":"jaljdlkjadfj.email.email"}' -v
 var jwtAuthentication = func(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         tk := &types.Claims{}

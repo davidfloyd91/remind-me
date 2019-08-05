@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -19,7 +19,15 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var rows *sql.Rows
 
 	requestPath := r.URL.Path
-	paramId := strings.Split(requestPath, "/")[2]
+	pathSplit := strings.Split(requestPath, "/")
+	paramId := pathSplit[2]
+
+	if len(pathSplit) > 3 {
+		if pathSplit[3] == "events" {
+			Events(w, r)
+			return
+		}
+	}
 
 	switch r.Method {
 	case "GET":
@@ -88,7 +96,6 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	// curl -X PATCH http://localhost:8000/users/5 -H "Token: lol" -d '{ "Email":"jaljdlkjadfj.email.email"}' -v
 	case "PATCH":
 		if paramId == "" {
-			fmt.Println("here")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -97,7 +104,6 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		err := json.NewDecoder(r.Body).Decode(user)
 		if err != nil {
-			panic(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

@@ -6,23 +6,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 )
 
-type NullTime struct {
-	Time  time.Time
-	Valid bool // Valid is true if Time is not NULL
-}
-
-func newNullTime(t time.Time) NullTime {
-	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
-		return NullTime{}
-	}
-	return NullTime{
-		Time:  t,
-		Valid: true,
-	}
-}
+// this is behaving very strangely
+// func newNullTime(t time.Time) pq.NullTime {
+// 	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
+// 		return pq.NullTime{}
+// 	}
+// 	return pq.NullTime{
+// 		Time:  t,
+// 		Valid: true,
+// 	}
+// }
 
 func newNullString(s string) sql.NullString {
 	if len(s) == 0 {
@@ -42,8 +37,8 @@ func Start() {
 	http.Handle("/signup/", Users)
 	http.Handle("/login/", Login)
 
+	// redirects to Events
 	http.Handle("/users/", jwtAuthentication(Users))
-	http.Handle("/users/5/events/", jwtAuthentication(Events))
 
 	fmt.Println("Listening at http://localhost" + port)
 	log.Fatal(http.ListenAndServe(port, nil))
