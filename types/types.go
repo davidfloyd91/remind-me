@@ -21,7 +21,7 @@ type Event struct {
 	UserId      uint
 	Name        string
 	Description string
-	scheduled   time.Time
+	Scheduled   time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   time.Time
