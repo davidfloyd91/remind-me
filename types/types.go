@@ -11,6 +11,7 @@ type User struct {
 	Username  string
 	Email     string
 	Password  string
+	Admin     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt time.Time
@@ -21,7 +22,7 @@ type Event struct {
 	UserId      uint
 	Name        string
 	Description string
-	Scheduled   string
+	Scheduled   string // hacky
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   time.Time
@@ -29,5 +30,6 @@ type Event struct {
 
 type Claims struct {
 	UserId uint
+	Admin bool
 	jwt.StandardClaims
 }

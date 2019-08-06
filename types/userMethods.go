@@ -7,9 +7,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func (user User) GenerateJwt() (string, error) {
+func (user User) GenerateJwt(isAdmin bool) (string, error) {
 	claims := &Claims{
 		UserId: user.Id,
+		Admin: isAdmin,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24 * 30).Unix(),
 		},

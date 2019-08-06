@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	// "fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -34,7 +35,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		// need to protect this endpoint -- admin in claims?
-		
+
 		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
 		if paramId == "" {
 			query := `
@@ -227,15 +228,22 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var isAdmin bool
+	// todo: hash to compare 
+	if user.Admin == os.Getenv("ADMIN_SECRET") {
+		isAdmin = true
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
 	if err == nil {
-		token, err := users[0].GenerateJwt()
+		token, err := users[0].GenerateJwt(isAdmin)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		json.NewEncoder(w).Encode(&token)
 	} else {
+		panic(err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

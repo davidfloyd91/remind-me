@@ -12,7 +12,6 @@ import (
 	"github.com/davidfloyd91/remind-me/types"
 )
 
-// Scheduled is GMT-5, not -4 like everything else???
 var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var events []types.Event
 	var rows *sql.Rows

@@ -8,17 +8,6 @@ import (
 	"net/http"
 )
 
-// this is behaving very strangely
-// func newNullTime(t time.Time) pq.NullTime {
-// 	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
-// 		return pq.NullTime{}
-// 	}
-// 	return pq.NullTime{
-// 		Time:  t,
-// 		Valid: true,
-// 	}
-// }
-
 func newNullString(s string) sql.NullString {
 	if len(s) == 0 {
 		return sql.NullString{}
