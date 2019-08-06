@@ -11,7 +11,7 @@ type User struct {
 	Username  string
 	Email     string
 	Password  string
-	Admin     string
+	Admin     string // hackish
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt time.Time

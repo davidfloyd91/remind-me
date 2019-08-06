@@ -20,7 +20,6 @@ func newNullString(s string) sql.NullString {
 
 const port = ":8000"
 
-// https://medium.com/@matryer/writing-middleware-in-golang-and-how-go-makes-it-so-much-fun-4375c1246e81
 func Start() {
 	http.Handle("/", root)
 	http.Handle("/signup/", Users)

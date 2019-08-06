@@ -3,7 +3,6 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	// "fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -34,8 +33,6 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// need to protect this endpoint -- admin in claims?
-
 		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
 		if paramId == "" {
 			query := `
@@ -184,7 +181,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }) // close Users
 
-// $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar"}' -v
+// $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar","Admin":"superfunny"}' -v
 var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var users []types.User
 	user := &types.User{}
@@ -229,7 +226,7 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var isAdmin bool
-	// todo: hash to compare 
+	// todo: hash to compare
 	if user.Admin == os.Getenv("ADMIN_SECRET") {
 		isAdmin = true
 	}
