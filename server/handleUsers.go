@@ -32,36 +32,20 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
-		// if paramId == "" {
-		// 	query := `
-    //       SELECT id, username, email, created_at, updated_at, deleted_at
-    //       FROM users
-    //       WHERE deleted_at IS NULL
-    //       ORDER BY id
-    //     `
-		//
-		// 	var err error
-		// 	rows, err = db.DB.Query(query)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// } else {
-			// $ curl http://localhost:8000/users/1 -v
-			query := `
-          SELECT id, username, email, created_at, updated_at, deleted_at
-          FROM users
-          WHERE id = $1
-          AND deleted_at IS NULL
-          ORDER BY id
-        `
+		// $ curl http://localhost:8000/users/1 -v
+		query := `
+        SELECT id, username, email, created_at, updated_at, deleted_at
+        FROM users
+        WHERE id = $1
+        AND deleted_at IS NULL
+        ORDER BY id
+      `
 
-			var err error
-			rows, err = db.DB.Query(query, paramId)
-			if err != nil {
-				panic(err)
-			}
-		// }
+		var err error
+		rows, err = db.DB.Query(query, paramId)
+		if err != nil {
+			panic(err)
+		}
 
 	// $ curl http://localhost:8000/signup/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
@@ -90,9 +74,9 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if err != nil {
 				if err.Error() == "pq: duplicate key value violates unique constraint \"users_username_key\"" {
-            w.WriteHeader(http.StatusConflict)
-            return
-        }
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}

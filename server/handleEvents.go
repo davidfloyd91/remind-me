@@ -3,7 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-  "fmt"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -52,8 +52,6 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-    fmt.Println(scheduled)
-
 		query := `
           INSERT INTO events (user_id, name, description, scheduled)
           VALUES ($1, $2, $3, $4)
@@ -66,7 +64,7 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-  // $ curl -X PATCH http://localhost:8000/users/6/events/5 -H "Token: lol" -d '{"Scheduled":"2087-01-02T15:04:05+02:00"}' -v
+		// $ curl -X PATCH http://localhost:8000/users/6/events/5 -H "Token: lol" -d '{"Scheduled":"2087-01-02T15:04:05+02:00"}' -v
 	case "PATCH":
 		if paramEventId == "" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -103,26 +101,26 @@ var Events = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// curl -X DELETE http://localhost:8000/users/6/events/8 -H "Token: lol" -v
-		case "DELETE":
-			if paramEventId == "" {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+	// curl -X DELETE http://localhost:8000/users/6/events/8 -H "Token: lol" -v
+	case "DELETE":
+		if paramEventId == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-			query := `
+		query := `
 		      UPDATE events SET
 		        deleted_at = current_timestamp
 		      WHERE id = $1
 		      RETURNING id, user_id, name, description, scheduled, created_at, updated_at, deleted_at
 		    `
 
-			var err error
-			rows, err = db.DB.Query(query, paramEventId)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+		var err error
+		rows, err = db.DB.Query(query, paramEventId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	} // close switch
 
 	for rows.Next() {
