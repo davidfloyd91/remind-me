@@ -84,15 +84,28 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		query := `
         INSERT INTO users (username, email, password)
         VALUES ($1, $2, $3)
-        RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-		rows, err = db.DB.Query(query, user.Username, newNullString(user.Email), digest)
+		_, err = db.DB.Query(query, user.Username, newNullString(user.Email), digest)
 		if err != nil {
 			// handle conflict error here
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
+		token, err := user.GenerateJwt()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(&token)
+		return
 
 	// curl -X PATCH http://localhost:8000/users/5 -H "Token: lol" -d '{ "Email":"jaljdlkjadfj.email.email"}' -v
 	case "PATCH":
