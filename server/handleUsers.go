@@ -87,7 +87,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         RETURNING id, username, email, created_at, updated_at, deleted_at
       `
 
-		rows, err = db.DB.Query(query, user.Username, user.Email, digest)
+		rows, err = db.DB.Query(query, user.Username, newNullString(user.Email), digest)
 		if err != nil {
 			// handle conflict error here
 			w.WriteHeader(http.StatusBadRequest)
