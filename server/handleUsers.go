@@ -90,6 +90,10 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// handle conflict error here
 			if err != nil {
+				if err.Error() == "pq: duplicate key value violates unique constraint \"users_username_key\"" {
+            w.WriteHeader(http.StatusConflict)
+            return
+        }
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -145,7 +149,6 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		rows, err = db.DB.Query(query, newNullString(user.Username), newNullString(user.Email), newNullString(digest), paramId)
 		if err != nil {
-			// duplicate username fails silently here
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
