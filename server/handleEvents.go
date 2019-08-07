@@ -3,7 +3,6 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
