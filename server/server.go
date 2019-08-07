@@ -21,17 +21,17 @@ func newNullString(s string) sql.NullString {
 }
 
 const port = ":8000"
+const origin = "chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"
 
 func Start() {
 	mux := http.NewServeMux()
 	c := cors.New(cors.Options{
-	        AllowedOrigins: []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
-	        AllowCredentials: true,
-	        AllowedMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-	        // figure out which headers to allow
-	        AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
-	    })
-  handler := c.Handler(mux)
+		AllowedOrigins:   []string{origin},
+		AllowCredentials: true,
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
+	})
+	handler := c.Handler(mux)
 
 	mux.Handle("/", root)
 	mux.Handle("/signup/", Users)
