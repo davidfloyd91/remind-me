@@ -27,6 +27,10 @@ type Event struct {
 	DeletedAt   time.Time
 }
 
+type Token struct {
+	Token string
+}
+
 type Claims struct {
 	UserId uint
 	jwt.StandardClaims

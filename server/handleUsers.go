@@ -97,10 +97,13 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		token, err := user.GenerateJwt()
+		tokenString, err := user.GenerateJwt()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+		token := types.Token{
+			Token: tokenString,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -239,10 +242,13 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
 	if err == nil {
-		token, err := users[0].GenerateJwt()
+		tokenString, err := users[0].GenerateJwt()
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
+		}
+		token := types.Token{
+			Token: tokenString,
 		}
 		json.NewEncoder(w).Encode(&token)
 	} else {
