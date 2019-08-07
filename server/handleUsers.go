@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -34,20 +33,20 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		// $ curl http://localhost:8000/users/ -v | json_pp --json_opt=canonical,pretty
-		if paramId == "" {
-			query := `
-          SELECT id, username, email, created_at, updated_at, deleted_at
-          FROM users
-          WHERE deleted_at IS NULL
-          ORDER BY id
-        `
-
-			var err error
-			rows, err = db.DB.Query(query)
-			if err != nil {
-				panic(err)
-			}
-		} else {
+		// if paramId == "" {
+		// 	query := `
+    //       SELECT id, username, email, created_at, updated_at, deleted_at
+    //       FROM users
+    //       WHERE deleted_at IS NULL
+    //       ORDER BY id
+    //     `
+		//
+		// 	var err error
+		// 	rows, err = db.DB.Query(query)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		// } else {
 			// $ curl http://localhost:8000/users/1 -v
 			query := `
           SELECT id, username, email, created_at, updated_at, deleted_at
@@ -62,7 +61,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				panic(err)
 			}
-		}
+		// }
 
 	// $ curl http://localhost:8000/signup/ -d '{"Username":"Alice","Email":"alice@alice.alice", "Password":"lol"}' -v
 	case "POST":
@@ -181,7 +180,7 @@ var Users = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }) // close Users
 
-// $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar","Admin":"superfunny"}' -v
+// $ curl http://localhost:8000/login/ -d '{"Username":"Egh","Password":"Superhilar"}' -v
 var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var users []types.User
 	user := &types.User{}
@@ -225,15 +224,9 @@ var Login = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var isAdmin bool
-	// todo: hash to compare
-	if user.Admin == os.Getenv("ADMIN_SECRET") {
-		isAdmin = true
-	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user.Password))
 	if err == nil {
-		token, err := users[0].GenerateJwt(isAdmin)
+		token, err := users[0].GenerateJwt()
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

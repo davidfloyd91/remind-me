@@ -34,13 +34,6 @@ var jwtAuthentication = func(next http.Handler) http.Handler {
 			return
 		}
 
-		if pathSplit[1] == "users" && paramId == "" {
-	    if tk.Admin != true {
-        w.WriteHeader(http.StatusForbidden)
-        return
-      }
-		}
-
 		if paramId != "" {
 			id, err := strconv.ParseUint(paramId, 10, 0)
 			if err != nil || id != uint64(tk.UserId) {

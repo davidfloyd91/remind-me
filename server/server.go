@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 func newNullString(s string) sql.NullString {
@@ -21,15 +23,25 @@ func newNullString(s string) sql.NullString {
 const port = ":8000"
 
 func Start() {
-	http.Handle("/", root)
-	http.Handle("/signup/", Users)
-	http.Handle("/login/", Login)
+	mux := http.NewServeMux()
+	c := cors.New(cors.Options{
+	        AllowedOrigins: []string{"chrome-extension://nodpecpogkkofipgdkcchnbecnicoggl"},
+	        AllowCredentials: true,
+	        AllowedMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+	        // figure out which headers to allow
+	        AllowedHeaders: []string{"Token", "Host", "User-Agent", "Accept", "Content-Length", "Content-Type"},
+	    })
+  handler := c.Handler(mux)
+
+	mux.Handle("/", root)
+	mux.Handle("/signup/", Users)
+	mux.Handle("/login/", Login)
 
 	// redirects to Events
-	http.Handle("/users/", jwtAuthentication(Users))
+	mux.Handle("/users/", jwtAuthentication(Users))
 
 	fmt.Println("Listening at http://localhost" + port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, handler))
 }
 
 // $ curl http://localhost:8000/ -v
